@@ -25,6 +25,7 @@ String getTodayDay() {
   final format = DateFormat("EEEE");
   return format.format(now);
 }
+
 class RestartWidget extends StatefulWidget {
   final Widget child;
   const RestartWidget({super.key, required this.child});
@@ -103,6 +104,64 @@ Map<String, dynamic> loadTimetable() {
   }
 }
 
+Map<String, dynamic> loadTimetableSorted() {
+  final box = Hive.box('timetable');
+  String? jsonString = box.get('schedule_data');
+
+  final Map<String, dynamic> weekData;
+
+  if (jsonString != null) {
+    weekData = Map<String, dynamic>.from(json.decode(jsonString));
+  } else {
+    weekData = {
+      "Monday": {},
+      "Tuesday": {},
+      "Wednesday": {},
+      "Thursday": {},
+      "Friday": {},
+      "Saturday": {},
+      "Sunday": {},
+    };
+    box.put('schedule_data', json.encode(weekData));
+  }
+
+  /// Sort each day's classes by time
+  final sortedWeek = <String, dynamic>{};
+
+  weekData.forEach((day, sessions) {
+    final sessionMap = Map<String, dynamic>.from(sessions);
+
+    final sortedEntries = sessionMap.entries.toList()
+      ..sort((a, b) {
+        final aTime = _startTimeInMinutes(a.key);
+        final bTime = _startTimeInMinutes(b.key);
+        return aTime.compareTo(bTime);
+      });
+
+    sortedWeek[day] = Map.fromEntries(sortedEntries);
+  });
+
+  return sortedWeek;
+}
+
+int _startTimeInMinutes(String timeRange) {
+  // Example: "8:00 AM - 9:00 AM"
+  final start = timeRange.split('-').first.trim();
+  final parts = start.split(' ');
+
+  final time = parts[0]; // 8:00
+  final period = parts[1]; // AM / PM
+
+  final hourMinute = time.split(':');
+  int hour = int.parse(hourMinute[0]);
+  final int minute = int.parse(hourMinute[1]);
+
+  if (period == 'PM' && hour != 12) hour += 12;
+  if (period == 'AM' && hour == 12) hour = 0;
+
+  return hour * 60 + minute;
+}
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
@@ -143,7 +202,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   @override
   void initState() {
     super.initState();
-    timetable = loadTimetable();
+    timetable = loadTimetableSorted();
   }
 
   /// Saves the current state of [timetable] to Hive
@@ -154,19 +213,27 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
   String classType(String a) {
     switch (a) {
-      case 'L': return 'Lecture';
-      case 'T': return 'Tutorial';
-      case 'P': return 'Practical';
-      default: return 'Lecture';
+      case 'L':
+        return 'Lecture';
+      case 'T':
+        return 'Tutorial';
+      case 'P':
+        return 'Practical';
+      default:
+        return 'Lecture';
     }
   }
 
   IconData getClassIcon(String classType) {
     switch (classType) {
-      case 'L': return Icons.menu_book_rounded;
-      case 'T': return Icons.my_library_books_rounded;
-      case 'P': return Icons.computer_sharp;
-      default: return Icons.class_rounded;
+      case 'L':
+        return Icons.menu_book_rounded;
+      case 'T':
+        return Icons.my_library_books_rounded;
+      case 'P':
+        return Icons.computer_sharp;
+      default:
+        return Icons.class_rounded;
     }
   }
 
@@ -180,8 +247,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
       final DateTime classStart = DateTime(
           now.year, now.month, now.day, startTime.hour, startTime.minute);
-      final DateTime classEnd = DateTime(
-          now.year, now.month, now.day, endTime.hour, endTime.minute);
+      final DateTime classEnd =
+          DateTime(now.year, now.month, now.day, endTime.hour, endTime.minute);
 
       return now.isAfter(classStart) && now.isBefore(classEnd);
     } catch (e) {
@@ -192,7 +259,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   /// Dialog to edit a specific class entry
   Future<void> _editEntry(String timeSlot, Map<String, dynamic> details) async {
     final subjectController =
-    TextEditingController(text: details['subject_name']);
+        TextEditingController(text: details['subject_name']);
     final roomController = TextEditingController(text: details['classroom']);
     String selectedType = details['class_type'] ?? 'L';
 
@@ -211,7 +278,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
                 ),
                 TextField(
                   controller: roomController,
-                  decoration: const InputDecoration(labelText: "Classroom / Lab"),
+                  decoration:
+                      const InputDecoration(labelText: "Classroom / Lab"),
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
@@ -314,7 +382,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     dayName,
                     style: TextStyle(
                       fontWeight:
-                      isSelected ? FontWeight.bold : FontWeight.normal,
+                          isSelected ? FontWeight.bold : FontWeight.normal,
                     ),
                   ),
                   selected: isSelected,
@@ -350,8 +418,14 @@ class _TimetableScreenState extends State<TimetableScreen> {
               title: const Text("Manage Schedule"),
               onTap: () {
                 Navigator.pop(context); // Close drawer
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageTimetableScreen())).then((_) {
-                  setState(() { timetable = loadTimetable(); }); // Refresh UI on return
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            const ManageTimetableScreen())).then((_) {
+                  setState(() {
+                    timetable = loadTimetable();
+                  }); // Refresh UI on return
                 });
               },
             ),
@@ -360,7 +434,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
               title: const Text("Settings"),
               onTap: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsPage()));
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const SettingsPage()));
               },
             ),
           ],
@@ -399,135 +476,137 @@ class _TimetableScreenState extends State<TimetableScreen> {
             Expanded(
               child: daySchedule.isEmpty
                   ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.edit_note_rounded,
-                      size: 64,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No Classes Set',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        color: Colors.grey.shade600,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.edit_note_rounded,
+                            size: 64,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No Classes Set',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Optional: Add button to add a class here
+                          const Text(
+                              "Tap + to add a class (Not implemented yet)")
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Optional: Add button to add a class here
-                    const Text("Tap + to add a class (Not implemented yet)")
-                  ],
-                ),
-              )
+                    )
                   : ListView.builder(
-                padding: const EdgeInsets.only(top: 8),
-                itemCount: daySchedule.length,
-                itemBuilder: (context, index) {
-                  final entry = daySchedule.entries.elementAt(index);
-                  final time = entry.key;
-                  final details = entry.value;
-                  final type = classType(details['class_type']);
-                  final bool live = isToday && isClassLive(time);
+                      padding: const EdgeInsets.only(top: 8),
+                      itemCount: daySchedule.length,
+                      itemBuilder: (context, index) {
+                        final entry = daySchedule.entries.elementAt(index);
+                        final time = entry.key;
+                        final details = entry.value;
+                        final type = classType(details['class_type']);
+                        final bool live = isToday && isClassLive(time);
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      // Make the card clickable for editing
-                      onTap: () => _editEntry(time, details),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            // Make the card clickable for editing
+                            onTap: () => _editEntry(time, details),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Row(
                                 children: [
-                                  Icon(
-                                    getClassIcon(details['class_type']),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    details['subject_name'],
-                                    style: theme.textTheme.titleMedium
-                                        ?.copyWith(
-                                      fontWeight: FontWeight.bold,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                          getClassIcon(details['class_type']),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          details['subject_name'],
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.access_time_rounded,
+                                              size: 16,
+                                              color: theme
+                                                  .colorScheme.onSurfaceVariant,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              time,
+                                              style: TextStyle(
+                                                color: theme.colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            Icon(
+                                              Icons.location_on_rounded,
+                                              size: 16,
+                                              color: theme
+                                                  .colorScheme.onSurfaceVariant,
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              details['classroom'],
+                                              style: TextStyle(
+                                                color: theme.colorScheme
+                                                    .onSurfaceVariant,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                  const SizedBox(height: 12),
-                                  Row(
+                                  const SizedBox(width: 16),
+                                  Column(
                                     children: [
-                                      Icon(
-                                        Icons.access_time_rounded,
-                                        size: 16,
-                                        color: theme.colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        time,
-                                        style: TextStyle(
-                                          color: theme.colorScheme
-                                              .onSurfaceVariant,
+                                      if (live)
+                                        Row(
+                                          children: const [
+                                            Icon(
+                                              Icons.circle,
+                                              color: Colors.green,
+                                              size: 12,
+                                            ),
+                                            SizedBox(width: 4),
+                                            Text(
+                                              "Live",
+                                              style: TextStyle(
+                                                color: Colors.green,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 16),
-                                      Icon(
-                                        Icons.location_on_rounded,
-                                        size: 16,
-                                        color: theme.colorScheme
-                                            .onSurfaceVariant,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        details['classroom'],
-                                        style: TextStyle(
-                                          color: theme.colorScheme
-                                              .onSurfaceVariant,
-                                        ),
-                                      ),
+                                      if (live) const SizedBox(height: 8),
+                                      Chip(label: Text(type)),
+                                      // Edit hint icon
+                                      const SizedBox(height: 8),
+                                      const Icon(Icons.edit,
+                                          size: 14, color: Colors.grey)
                                     ],
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Column(
-                              children: [
-                                if (live)
-                                  Row(
-                                    children: const [
-                                      Icon(
-                                        Icons.circle,
-                                        color: Colors.green,
-                                        size: 12,
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        "Live",
-                                        style: TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                if (live) const SizedBox(height: 8),
-                                Chip(label: Text(type)),
-                                // Edit hint icon
-                                const SizedBox(height: 8),
-                                const Icon(Icons.edit, size: 14, color: Colors.grey)
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
             ),
           ],
         ),
@@ -538,7 +617,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => ManageTimetableScreen(initialDay: selectedDay),
+              builder: (context) =>
+                  ManageTimetableScreen(initialDay: selectedDay),
             ),
           ).then((_) {
             // This refreshes the main screen UI when you come back from managing
@@ -548,7 +628,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
           });
         },
         tooltip: "Edit Schedule",
-        child: const Icon(Icons.edit_note_rounded), // Changed to an edit-style icon
+        child: const Icon(
+            Icons.edit_note_rounded), // Changed to an edit-style icon
       ),
     );
   }
