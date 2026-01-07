@@ -1,0 +1,555 @@
+import 'dart:convert';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:flex_color_scheme/flex_color_scheme.dart';
+import "package:hive_flutter/hive_flutter.dart";
+import 'package:timetable_app/settings.dart';
+
+import 'manage.dart';
+
+late String day;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Hive
+  await Hive.initFlutter();
+  await Hive.openBox('timetable');
+
+  day = getTodayDay();
+  runApp(const RestartWidget(child: const MyApp()));
+}
+
+String getTodayDay() {
+  final now = DateTime.now();
+  final format = DateFormat("EEEE");
+  return format.format(now);
+}
+class RestartWidget extends StatefulWidget {
+  final Widget child;
+  const RestartWidget({super.key, required this.child});
+
+  static void restartApp(BuildContext context) {
+    context.findAncestorStateOfType<_RestartWidgetState>()?.restart();
+  }
+
+  @override
+  State<RestartWidget> createState() => _RestartWidgetState();
+}
+
+class _RestartWidgetState extends State<RestartWidget> {
+  Key key = UniqueKey();
+
+  void restart() {
+    setState(() {
+      key = UniqueKey();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return KeyedSubtree(
+      key: key,
+      child: widget.child,
+    );
+  }
+}
+
+Future<String?> selectTimeRange(BuildContext context) async {
+  // Pick Start Time
+  TimeOfDay? start = await showTimePicker(
+    context: context,
+    initialTime: const TimeOfDay(hour: 9, minute: 0),
+    helpText: "SELECT START TIME",
+  );
+  if (start == null) return null;
+
+  // Pick End Time
+  TimeOfDay? end = await showTimePicker(
+    context: context,
+    initialTime: TimeOfDay(hour: start.hour + 1, minute: start.minute),
+    helpText: "SELECT END TIME",
+  );
+  if (end == null) return null;
+
+  // Format to your existing string style
+  final String startStr = start.format(context);
+  final String endStr = end.format(context);
+  return "$startStr - $endStr";
+}
+
+/// Loads timetable from Hive.
+/// If Hive is empty, it returns a default empty structure for the week.
+Map<String, dynamic> loadTimetable() {
+  final box = Hive.box('timetable');
+  String? jsonString = box.get('schedule_data');
+
+  if (jsonString != null) {
+    return Map<String, dynamic>.from(json.decode(jsonString));
+  } else {
+    // Default empty structure if nothing is in Hive yet
+    final emptyWeek = {
+      "Monday": {},
+      "Tuesday": {},
+      "Wednesday": {},
+      "Thursday": {},
+      "Friday": {},
+      "Saturday": {},
+      "Sunday": {},
+    };
+    // Save this initial structure so we have something to edit later
+    box.put('schedule_data', json.encode(emptyWeek));
+    return emptyWeek;
+  }
+}
+
+class MyApp extends StatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'My Timetable',
+      theme: FlexThemeData.light(
+        scheme: FlexScheme.deepPurple,
+        useMaterial3: true,
+      ),
+      darkTheme: FlexThemeData.dark(
+        darkIsTrueBlack: false,
+        useMaterial3: true,
+      ),
+      themeMode: ThemeMode.system,
+      home: const TimetableScreen(),
+    );
+  }
+}
+
+class TimetableScreen extends StatefulWidget {
+  const TimetableScreen({super.key});
+
+  @override
+  State<TimetableScreen> createState() => _TimetableScreenState();
+}
+
+class _TimetableScreenState extends State<TimetableScreen> {
+  late Map<String, dynamic> timetable;
+  String selectedDay = day;
+
+  @override
+  void initState() {
+    super.initState();
+    timetable = loadTimetable();
+  }
+
+  /// Saves the current state of [timetable] to Hive
+  void _saveToHive() {
+    final box = Hive.box('timetable');
+    box.put('schedule_data', json.encode(timetable));
+  }
+
+  String classType(String a) {
+    switch (a) {
+      case 'L': return 'Lecture';
+      case 'T': return 'Tutorial';
+      case 'P': return 'Practical';
+      default: return 'Lecture';
+    }
+  }
+
+  IconData getClassIcon(String classType) {
+    switch (classType) {
+      case 'L': return Icons.menu_book_rounded;
+      case 'T': return Icons.my_library_books_rounded;
+      case 'P': return Icons.computer_sharp;
+      default: return Icons.class_rounded;
+    }
+  }
+
+  bool isClassLive(String timeSlot) {
+    try {
+      final now = DateTime.now();
+      final parts = timeSlot.split(' - ');
+      final DateFormat parser = DateFormat("h:mm a");
+      final DateTime startTime = parser.parse(parts[0]);
+      final DateTime endTime = parser.parse(parts[1]);
+
+      final DateTime classStart = DateTime(
+          now.year, now.month, now.day, startTime.hour, startTime.minute);
+      final DateTime classEnd = DateTime(
+          now.year, now.month, now.day, endTime.hour, endTime.minute);
+
+      return now.isAfter(classStart) && now.isBefore(classEnd);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Dialog to edit a specific class entry
+  Future<void> _editEntry(String timeSlot, Map<String, dynamic> details) async {
+    final subjectController =
+    TextEditingController(text: details['subject_name']);
+    final roomController = TextEditingController(text: details['classroom']);
+    String selectedType = details['class_type'] ?? 'L';
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Edit Class ($timeSlot)"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: subjectController,
+                  decoration: const InputDecoration(labelText: "Subject Name"),
+                ),
+                TextField(
+                  controller: roomController,
+                  decoration: const InputDecoration(labelText: "Classroom / Lab"),
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: const InputDecoration(labelText: "Class Type"),
+                  items: const [
+                    DropdownMenuItem(value: 'L', child: Text("Lecture (L)")),
+                    DropdownMenuItem(value: 'T', child: Text("Tutorial (T)")),
+                    DropdownMenuItem(value: 'P', child: Text("Practical (P)")),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) selectedType = val;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            FilledButton(
+              onPressed: () {
+                setState(() {
+                  // Update the local map
+                  timetable[selectedDay][timeSlot] = {
+                    "subject_name": subjectController.text,
+                    "classroom": roomController.text,
+                    "class_type": selectedType,
+                    // Preserve existing teacher data if you have it, or defaults
+                    "teacher": details['teacher'] ?? "Unknown",
+                  };
+                });
+                _saveToHive();
+                Navigator.pop(context);
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final days = timetable.keys.toList();
+    // Ensure we handle cases where the day key might be missing
+    final daySchedule = Map<String, dynamic>.from(timetable[selectedDay] ?? {});
+    final today = getTodayDay();
+    final theme = Theme.of(context);
+    final isToday = selectedDay == today;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          "Timetable",
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
+      drawer: Drawer(
+        backgroundColor: theme.colorScheme.surface,
+        child: Column(
+          children: [
+            UserAccountsDrawerHeader(
+              decoration: BoxDecoration(color: theme.colorScheme.surface),
+              accountName: Text(
+                'Timetable Viewer',
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              accountEmail: Text(
+                'Today: $today',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Icon(
+                  Icons.calendar_month_outlined,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+            ),
+            ...days.map((dayName) {
+              final isSelected = dayName == selectedDay;
+              final isDayToday = dayName == today;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: ListTile(
+                  leading: Icon(
+                    isDayToday
+                        ? Icons.today_rounded
+                        : Icons.calendar_view_day_rounded,
+                  ),
+                  title: Text(
+                    dayName,
+                    style: TextStyle(
+                      fontWeight:
+                      isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  selected: isSelected,
+                  selectedTileColor: theme.colorScheme.primary.withOpacity(0.1),
+                  onTap: () {
+                    setState(() {
+                      selectedDay = dayName;
+                    });
+                    Navigator.pop(context);
+                  },
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              );
+            }),
+            const Spacer(),
+            const Divider(),
+            // ListTile(
+            //   leading: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+            //   title: const Text("Clear All Data", style: TextStyle(color: Colors.red)),
+            //   onTap: () {
+            //     // Simple reset logic
+            //     Hive.box('timetable').delete('schedule_data');
+            //     setState(() {
+            //       timetable = loadTimetable();
+            //     });
+            //     Navigator.pop(context);
+            //   },
+            // ),
+            ListTile(
+              leading: const Icon(Icons.edit_calendar_rounded),
+              title: const Text("Manage Schedule"),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const ManageTimetableScreen())).then((_) {
+                  setState(() { timetable = loadTimetable(); }); // Refresh UI on return
+                });
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text("Settings"),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsPage()));
+              },
+            ),
+          ],
+        ),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 16.0, bottom: 16.0),
+              child: Row(
+                children: [
+                  Text(
+                    selectedDay,
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (isToday)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 12.0),
+                      child: Chip(
+                        label: const Text("Today"),
+                        labelStyle: TextStyle(
+                          color: theme.colorScheme.onSurface,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        backgroundColor: theme.chipTheme.backgroundColor,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: daySchedule.isEmpty
+                  ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.edit_note_rounded,
+                      size: 64,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'No Classes Set',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Optional: Add button to add a class here
+                    const Text("Tap + to add a class (Not implemented yet)")
+                  ],
+                ),
+              )
+                  : ListView.builder(
+                padding: const EdgeInsets.only(top: 8),
+                itemCount: daySchedule.length,
+                itemBuilder: (context, index) {
+                  final entry = daySchedule.entries.elementAt(index);
+                  final time = entry.key;
+                  final details = entry.value;
+                  final type = classType(details['class_type']);
+                  final bool live = isToday && isClassLive(time);
+
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      // Make the card clickable for editing
+                      onTap: () => _editEntry(time, details),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    getClassIcon(details['class_type']),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    details['subject_name'],
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.access_time_rounded,
+                                        size: 16,
+                                        color: theme.colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        time,
+                                        style: TextStyle(
+                                          color: theme.colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Icon(
+                                        Icons.location_on_rounded,
+                                        size: 16,
+                                        color: theme.colorScheme
+                                            .onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        details['classroom'],
+                                        style: TextStyle(
+                                          color: theme.colorScheme
+                                              .onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Column(
+                              children: [
+                                if (live)
+                                  Row(
+                                    children: const [
+                                      Icon(
+                                        Icons.circle,
+                                        color: Colors.green,
+                                        size: 12,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        "Live",
+                                        style: TextStyle(
+                                          color: Colors.green,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                if (live) const SizedBox(height: 8),
+                                Chip(label: Text(type)),
+                                // Edit hint icon
+                                const SizedBox(height: 8),
+                                const Icon(Icons.edit, size: 14, color: Colors.grey)
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // Navigate to ManageTimetableScreen passing the currently viewed day
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ManageTimetableScreen(initialDay: selectedDay),
+            ),
+          ).then((_) {
+            // This refreshes the main screen UI when you come back from managing
+            setState(() {
+              timetable = loadTimetable();
+            });
+          });
+        },
+        tooltip: "Edit Schedule",
+        child: const Icon(Icons.edit_note_rounded), // Changed to an edit-style icon
+      ),
+    );
+  }
+}

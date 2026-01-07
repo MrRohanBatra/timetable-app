@@ -1,0 +1,33 @@
+name: timetable_app
+description: A Flutter app to display a timetable with online/offline fallback.
+publish_to: "none"
+
+version: 1.0.0+1607
+
+environment:
+  sdk: ">=3.0.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  intl: ^0.20.2
+  http: ^1.2.1
+  flex_color_scheme: ^8.4.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  package_info_plus: ^9.0.0
+  share_plus: ^12.0.1
+  path_provider: ^2.1.5
+  file_picker: ^10.3.8
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/json/timetable.json

@@ -1,0 +1,152 @@
+{
+  "Monday": {
+    "8-9": {
+      "classroom": "FF8",
+      "subject_code": "16B1NMA533",
+      "subject_name": "MATRIX COMPUTATIONS",
+      "class_type": "L"
+    },
+    "9-10": {
+      "classroom": "G6",
+      "subject_code": "21B12HS312",
+      "subject_name": "MANAGEMENT ACCOUNTING",
+      "class_type": "L"
+    },
+    "10-12": {
+      "classroom": "CL13,14",
+      "subject_code": "18B15CS212",
+      "subject_name": "COMPUTER NETWORKS AND SECURITY LAB",
+      "class_type": "P"
+    },
+    "1-3": {
+      "classroom": "CL21",
+      "subject_code": "15B28CI582",
+      "subject_name": "MULTIMEDIA LAB",
+      "class_type": "P"
+    },
+    "3-4": {
+      "classroom": "CR526",
+      "subject_code": "20B13HS311",
+      "subject_name": "INDIAN CONSTITUTION & TRADITIONAL KNOWLEDGE",
+      "class_type": "L"
+    }
+  },
+  "Tuesday": {
+    "9-10": {
+      "classroom": "CS4",
+      "subject_code": "20B12CS334",
+      "subject_name": "OBJECT ORIENTED ANALYSIS AND DESIGN USING JAVA",
+      "class_type": "L"
+    },
+    "11-12": {
+      "classroom": "CR501",
+      "subject_code": "18B11CS212",
+      "subject_name": "COMPUTER  NETWORKS AND SECURITY",
+      "class_type": "L"
+    },
+    "1-2": {
+      "classroom": "FF7",
+      "subject_code": "15B11CI412",
+      "subject_name": "OPERATING SYSTEMS AND SYSTEMS PROGRAMMING",
+      "class_type": "L"
+    },
+    "2-3": {
+      "classroom": "TS11",
+      "subject_code": "15B11CI412",
+      "subject_name": "OPERATING SYSTEMS AND SYSTEMS PROGRAMMING",
+      "class_type": "T"
+    }
+  },
+  "Wednesday": {
+    "8-9": {
+      "classroom": "G6",
+      "subject_code": "21B12HS312",
+      "subject_name": "MANAGEMENT ACCOUNTING",
+      "class_type": "L"
+    },
+    "9-10": {
+      "classroom": "CS3",
+      "subject_code": "16B1NMA533",
+      "subject_name": "MATRIX COMPUTATIONS",
+      "class_type": "L"
+    },
+    "10-12": {
+      "classroom": "CL21",
+      "subject_code": "15B17CI575",
+      "subject_name": "OPEN SOURCE SOFTWARE LAB",
+      "class_type": "P"
+    },
+    "1-2": {
+      "classroom": "G6",
+      "subject_code": "15B11CI412",
+      "subject_name": "OPERATING SYSTEMS AND SYSTEMS PROGRAMMING",
+      "class_type": "L"
+    },
+    "3-4": {
+      "classroom": "FF9",
+      "subject_code": "18B11CS212",
+      "subject_name": "COMPUTER  NETWORKS AND SECURITY",
+      "class_type": "L"
+    }
+  },
+  "Thursday": {
+    "8-9": {
+      "classroom": "FF8",
+      "subject_code": "20B12CS334",
+      "subject_name": "OBJECT ORIENTED ANALYSIS AND DESIGN USING JAVA",
+      "class_type": "L"
+    },
+    "9-10": {
+      "classroom": "FF7",
+      "subject_code": "16B1NMA533",
+      "subject_name": "MATRIX COMPUTATIONS",
+      "class_type": "L"
+    },
+    "10-11": {
+      "classroom": "LT3",
+      "subject_code": "20B13HS311",
+      "subject_name": "INDIAN CONSTITUTION & TRADITIONAL KNOWLEDGE",
+      "class_type": "L"
+    },
+    "1-2": {
+      "classroom": "G1",
+      "subject_code": "15B11CI412",
+      "subject_name": "OPERATING SYSTEMS AND SYSTEMS PROGRAMMING",
+      "class_type": "L"
+    },
+    "2-3": {
+      "classroom": "FF2",
+      "subject_code": "18B11CS212",
+      "subject_name": "COMPUTER  NETWORKS AND SECURITY",
+      "class_type": "L"
+    }
+  },
+  "Friday": {
+    "9-10": {
+      "classroom": "G6",
+      "subject_code": "21B12HS312",
+      "subject_name": "MANAGEMENT ACCOUNTING",
+      "class_type": "L"
+    },
+    "10-11": {
+      "classroom": "LT3",
+      "subject_code": "20B13HS311",
+      "subject_name": "INDIAN CONSTITUTION & TRADITIONAL KNOWLEDGE",
+      "class_type": "L"
+    },
+    "1-3": {
+      "classroom": "CL03",
+      "subject_code": "15B17CI472",
+      "subject_name": "OPERATING SYSTEMS AND SYSTEMS PROGRAMMING LAB",
+      "class_type": "P"
+    }
+  },
+  "Saturday": {
+    "9-10": {
+      "classroom": "CS3",
+      "subject_code": "20B12CS334",
+      "subject_name": "OBJECT ORIENTED ANALYSIS AND DESIGN USING JAVA",
+      "class_type": "L"
+    }
+  }
+}
