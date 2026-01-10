@@ -2,7 +2,7 @@ name: timetable_app
 description: A Flutter app to display a timetable with online/offline fallback.
 publish_to: "none"
 
-version: 1.1.5+17
+version: 1.1.5+4000
 
 environment:
   sdk: ">=3.0.0 <4.0.0"

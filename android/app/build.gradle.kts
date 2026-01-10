@@ -41,10 +41,13 @@ android {
     }
 
     buildTypes {
-        release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+        getByName("release") {
+            // Force it to use the signing config we created above
             signingConfig = signingConfigs.getByName("release")
+
+            // These lines ensure the build doesn't fail due to missing shrinkers
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
