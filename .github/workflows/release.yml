@@ -4,7 +4,8 @@ on:
   push:
     tags:
       - 'v*' # This triggers the action whenever you push a tag starting with 'v'
-
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
