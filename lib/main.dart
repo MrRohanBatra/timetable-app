@@ -3,11 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import "package:hive_flutter/hive_flutter.dart";
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:timetable_app/settings.dart';
 
 import 'manage.dart';
+import "whats_new.dart";
 
 late String day;
+Future<void> checkAndShowWhatsNew(BuildContext context) async {
+  final packageInfo = await PackageInfo.fromPlatform();
+  final currentVersion = packageInfo.version; // e.g. 1.1.5
+
+  final appStateBox = Hive.box('app_state');
+
+  final lastSeenVersion =
+      appStateBox.get("last_seen_version", defaultValue: "");
+
+  if (currentVersion != lastSeenVersion) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showWhatsNewSheet(context);
+      appStateBox.put("last_seen_version", currentVersion);
+    });
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,7 +33,7 @@ void main() async {
   // Initialize Hive
   await Hive.initFlutter();
   await Hive.openBox('timetable');
-
+  await Hive.openBox("app_state");
   day = getTodayDay();
   runApp(const RestartWidget(child: const MyApp()));
 }
@@ -183,7 +201,11 @@ class _MyAppState extends State<MyApp> {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.system,
-      home: const TimetableScreen(),
+      // home: const TimetableScreen(),
+      initialRoute: "/",
+      routes: {
+        '/': (context) => const TimetableScreen(),
+      },
     );
   }
 }
@@ -203,6 +225,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
   void initState() {
     super.initState();
     timetable = loadTimetableSorted();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkAndShowWhatsNew(context);
+    });
   }
 
   /// Saves the current state of [timetable] to Hive
@@ -298,6 +323,48 @@ class _TimetableScreenState extends State<TimetableScreen> {
             ),
           ),
           actions: [
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text("Delete Class"),
+                    content: Text(
+                      "Are you sure you want to delete the class at $timeSlot?",
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text("Cancel"),
+                      ),
+                      FilledButton(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text("Delete"),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm != true) return;
+
+                setState(() {
+                  timetable[selectedDay]?.remove(timeSlot);
+                });
+
+                _saveToHive();
+
+                if (context.mounted) {
+                  Navigator.pop(context); // close edit dialog
+                }
+              },
+              child: const Text("Delete"),
+            ),
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: const Text("Cancel"),

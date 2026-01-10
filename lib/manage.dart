@@ -6,7 +6,7 @@ import 'package:hive/hive.dart';
 import 'main.dart';
 
 class ManageTimetableScreen extends StatefulWidget {
-  const ManageTimetableScreen({super.key,this.initialDay = "Monday"});
+  const ManageTimetableScreen({super.key, this.initialDay = "Monday"});
   final String initialDay;
 
   @override
@@ -34,7 +34,6 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
     "Applied Statistical Mechanics",
     "Applicational Aspects of Differential Equations",
     "Cosmetic Chemistry",
-
     "GenAI Workshop",
     "Advanced Data Structures and Algorithms Workshop",
     "Ethical Hacking Workshop",
@@ -50,7 +49,6 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
     "International Humanitarian Law: Practice & Policy",
     "Statistical Methods for Machine Learning",
     "Advanced Java Programming Workshop",
-
     "Web Technology and Cyber Security",
     "Fundamentals of Soft Computing",
     "Introduction to Large Scale Database Systems",
@@ -62,7 +60,6 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
     "Semiconductor Devices and Circuits",
     "Bioeconomics",
     "Genetic Disorders and Personalized Medicine",
-
     "Open Source Software Development",
     "Fundamentals of Distributed and Cloud Computing",
     "Concepts of Graph Theory",
@@ -73,7 +70,6 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
     "Introduction to FPGA Design",
     "Biopharmaceutics and Pharmacokinetics",
     "Antimicrobial Resistance",
-
     "Investment Management",
     "Game Theory for Engineers",
     "Effective Tools for Career Management and Development",
@@ -84,7 +80,6 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
     "Development Issues and Rural Engineering",
     "Political Philosophy",
     "Indian Literature",
-
     "Computer Networks and Internet of Things",
     "Computer Networks and Internet of Things Lab",
     "Software Engineering",
@@ -107,7 +102,6 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
     "Advance Wireless Technologies Lab",
     "Introduction to IoT and Embedded Systems",
     "IoT and Embedded Systems Lab",
-
     "Fundamentals of Natural Language Processing",
     "VLSI System Design Lab"
   ];
@@ -116,7 +110,7 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
   void initState() {
     super.initState();
     timetable = loadTimetable();
-    this.selectedDay=widget.initialDay;
+    this.selectedDay = widget.initialDay;
   }
 
   void _save() {
@@ -137,7 +131,8 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder( // Use StatefulBuilder to update dropdown state inside dialog
+      builder: (context) => StatefulBuilder(
+        // Use StatefulBuilder to update dropdown state inside dialog
         builder: (context, setDialogState) {
           return AlertDialog(
             title: Text("Add Class: $pickedTime"),
@@ -145,25 +140,27 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Autocomplete<String>(
-                  optionsBuilder: (val) => suggestions.where((s) => s.toLowerCase().contains(val.text.toLowerCase())),
+                  optionsBuilder: (val) => suggestions.where(
+                      (s) => s.toLowerCase().contains(val.text.toLowerCase())),
                   onSelected: (selection) => subjectController.text = selection,
                   fieldViewBuilder: (ctx, ctrl, node, onComplete) {
                     return TextField(
                       controller: ctrl,
                       focusNode: node,
-                      decoration: const InputDecoration(labelText: "Subject Name"),
+                      decoration:
+                          const InputDecoration(labelText: "Subject Name"),
                     );
                   },
                 ),
                 TextField(
                     controller: roomController,
-                    decoration: const InputDecoration(labelText: "Room")
-                ),
+                    decoration: const InputDecoration(labelText: "Room")),
                 const SizedBox(height: 15),
                 // Class Type Selector
                 DropdownButtonFormField<String>(
                   value: selectedType,
-                  decoration: const InputDecoration(labelText: "Class Type", border: OutlineInputBorder()),
+                  decoration: const InputDecoration(
+                      labelText: "Class Type", border: OutlineInputBorder()),
                   items: const [
                     DropdownMenuItem(value: "L", child: Text("Lecture (L)")),
                     DropdownMenuItem(value: "T", child: Text("Tutorial (T)")),
@@ -178,12 +175,16 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
               ],
             ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("Cancel")),
               FilledButton(
                 onPressed: () {
                   setState(() {
                     timetable[selectedDay][pickedTime] = {
-                      "subject_name": subjectController.text.isEmpty ? "No Name" : subjectController.text,
+                      "subject_name": subjectController.text.isEmpty
+                          ? "No Name"
+                          : subjectController.text,
                       "classroom": roomController.text,
                       "class_type": selectedType, // Now uses the selected value
                       "teacher": "Unknown"
@@ -193,13 +194,14 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
                   Navigator.pop(context);
                 },
                 child: const Text("Save"),
-              )
+              ),
             ],
           );
         },
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     var dayData = timetable[selectedDay] as Map;
@@ -211,14 +213,16 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
-              children: timetable.keys.map((d) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: ChoiceChip(
-                  label: Text(d),
-                  selected: selectedDay == d,
-                  onSelected: (val) => setState(() => selectedDay = d),
-                ),
-              )).toList(),
+              children: timetable.keys
+                  .map((d) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: ChoiceChip(
+                          label: Text(d),
+                          selected: selectedDay == d,
+                          onSelected: (val) => setState(() => selectedDay = d),
+                        ),
+                      ))
+                  .toList(),
             ),
           ),
           Expanded(
@@ -230,7 +234,8 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
                   title: Text(dayData[timeKey]['subject_name']),
                   subtitle: Text(timeKey),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete_sweep_rounded, color: Colors.red),
+                    icon: const Icon(Icons.delete_sweep_rounded,
+                        color: Colors.red),
                     onPressed: () {
                       setState(() => timetable[selectedDay].remove(timeKey));
                       _save();

@@ -8,6 +8,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import "package:path_provider/path_provider.dart";
 import 'package:share_plus/share_plus.dart';
 import 'package:timetable_app/main.dart';
+import 'package:timetable_app/whats_new.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -88,10 +89,19 @@ class _SettingsPageState extends State<SettingsPage> {
                   title: "Check for Updates",
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("You are on the latest version!")),
+                      const SnackBar(
+                          content: Text("You are on the latest version!")),
                     );
                   },
                 ),
+                const Divider(height: 1, indent: 56),
+                _buildListTile(
+                    icon: Icons.celebration,
+                    title: "What's New",
+                    onTap: () {
+                      showWhatsNewSheet(context);
+                    }),
+                const Divider(height: 1, indent: 56),
               ],
             ),
           ),
@@ -112,7 +122,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   icon: Icons.alternate_email,
                   title: "Contact Support",
                   subtitle: "rohanbatra.in@gmail.com",
-
                 ),
               ],
             ),
@@ -149,10 +158,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }) {
     return ListTile(
       leading: Icon(icon, color: iconColor),
-      title: Text(title, style: TextStyle(color: titleColor, fontWeight: FontWeight.w500)),
+      title: Text(title,
+          style: TextStyle(color: titleColor, fontWeight: FontWeight.w500)),
       subtitle: subtitle != null ? Text(subtitle) : null,
       onTap: onTap,
-      trailing: onTap != null ? const Icon(Icons.chevron_right, size: 20) : null,
+      trailing:
+          onTap != null ? const Icon(Icons.chevron_right, size: 20) : null,
     );
   }
 
@@ -193,9 +204,12 @@ class _SettingsPageState extends State<SettingsPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Clear all data?"),
-        content: const Text("This action cannot be undone. All your saved schedules will be lost."),
+        content: const Text(
+            "This action cannot be undone. All your saved schedules will be lost."),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Cancel")),
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel")),
           TextButton(
             onPressed: () {
               Hive.box('timetable').delete('schedule_data');
