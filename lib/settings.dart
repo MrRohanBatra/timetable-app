@@ -10,6 +10,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:timetable_app/main.dart';
 import 'package:timetable_app/whats_new.dart';
 
+import 'check_for_updates.dart';
+
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -87,11 +89,12 @@ class _SettingsPageState extends State<SettingsPage> {
                 _buildListTile(
                   icon: Icons.update,
                   title: "Check for Updates",
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("You are on the latest version!")),
-                    );
+                  onTap: () async {
+                    showCheckUpdatesSheet(context);
+                    // ScaffoldMessenger.of(context).showSnackBar(
+                    //   const SnackBar(
+                    //       content: Text("You are on the latest version!")),
+                    // );
                   },
                 ),
                 const Divider(height: 1, indent: 56),
