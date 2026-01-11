@@ -2,7 +2,7 @@ name: timetable_app
 description: A Flutter app to display a timetable with online/offline fallback.
 publish_to: "none"
 
-version: 1.1.7+4056
+version: 2.0.0+6000
 
 environment:
   sdk: ">=3.0.0 <4.0.0"
@@ -20,6 +20,10 @@ dependencies:
   path_provider: ^2.1.5
   file_picker: ^10.3.8
   flutter_launcher_icons: ^0.14.4
+  ota_update: ^7.1.0
+  permission_handler: ^12.0.1
+  dio: ^5.4.0
+  open_filex: ^4.4.0
 
 
 dev_dependencies:

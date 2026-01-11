@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import "package:hive_flutter/hive_flutter.dart";
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:timetable_app/check_for_updates.dart';
 import 'package:timetable_app/settings.dart';
 
 import 'manage.dart';
@@ -227,6 +228,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
     timetable = loadTimetableSorted();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWhatsNew(context);
+      Future.delayed(Duration(seconds: 4), () {
+        checkUpdateInBackground(context);
+      });
     });
   }
 
