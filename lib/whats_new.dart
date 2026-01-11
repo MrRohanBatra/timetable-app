@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-
 final List<Map<String, dynamic>> newFeatures = const [
   {
-    "title": "Live Class Indicator",
+    "title": "Quick Delete in Edit Mode",
     "description":
-        "See which class is currently live without reopening the app.",
-    "icon": Icons.live_tv,
+    "You can now delete a class directly from the edit screen. This improvement was added based on a suggestion from Dhruv.",
+    "icon": Icons.delete_outline,
   },
   {
-    "title": "Timetable Export",
-    "description": "Backup or share your timetable using JSON export/import.",
-    "icon": Icons.share,
+    "title": "Smart Auto Updates",
+    "description":
+    "Updates are now handled automatically. The app checks for new versions in the background and guides you through installation.",
+    "icon": Icons.system_update_alt,
   },
 ];
 
