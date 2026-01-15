@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import "package:hive_flutter/hive_flutter.dart";
@@ -8,6 +9,7 @@ import 'package:timetable_app/check_for_updates.dart';
 import 'package:timetable_app/settings.dart';
 
 import 'manage.dart';
+import 'notification_service.dart';
 import "whats_new.dart";
 
 late String day;
@@ -36,6 +38,7 @@ void main() async {
   await Hive.openBox('timetable');
   await Hive.openBox("app_state");
   day = getTodayDay();
+  await NotificationService().init();
   runApp(const RestartWidget(child: const MyApp()));
 }
 
@@ -55,6 +58,27 @@ class RestartWidget extends StatefulWidget {
 
   @override
   State<RestartWidget> createState() => _RestartWidgetState();
+}
+
+Future<void> syncNotifications() async {
+  final service = NotificationService();
+  await service.cancelAll(); // Clear old ones to avoid duplicates
+
+  final timetable = loadTimetable();
+  int idCounter = 0;
+
+  timetable.forEach((day, sessions) {
+    final sessionMap = Map<String, dynamic>.from(sessions);
+    sessionMap.forEach((timeRange, details) {
+      service.scheduleClassNotification(
+        id: idCounter++,
+        day: day,
+        timeRange: timeRange,
+        subject: details['subject_name'],
+        room: details['classroom'],
+      );
+    });
+  });
 }
 
 class _RestartWidgetState extends State<RestartWidget> {
@@ -226,18 +250,31 @@ class _TimetableScreenState extends State<TimetableScreen> {
   void initState() {
     super.initState();
     timetable = loadTimetableSorted();
+    _requestNotificationPermissions();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWhatsNew(context);
+      syncNotifications();
       Future.delayed(Duration(seconds: 4), () {
         checkUpdateInBackground(context);
       });
     });
   }
 
+  Future<void> _requestNotificationPermissions() async {
+    final android = NotificationService()
+        .flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    await android?.requestNotificationsPermission();
+    await android?.requestExactAlarmsPermission();
+  }
+
   /// Saves the current state of [timetable] to Hive
   void _saveToHive() {
     final box = Hive.box('timetable');
     box.put('schedule_data', json.encode(timetable));
+    syncNotifications();
   }
 
   String classType(String a) {
@@ -493,10 +530,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     context,
                     MaterialPageRoute(
                         builder: (context) =>
-                            const ManageTimetableScreen())).then((_) {
+                            const ManageTimetableScreen())).then((_) async {
                   setState(() {
-                    timetable = loadTimetable();
+                    timetable = loadTimetableSorted();
                   }); // Refresh UI on return
+                  await syncNotifications();
                 });
               },
             ),

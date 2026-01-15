@@ -3,11 +3,13 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+// import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hive/hive.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import "package:path_provider/path_provider.dart";
 import 'package:share_plus/share_plus.dart';
 import 'package:timetable_app/main.dart';
+import 'package:timetable_app/notification_service.dart';
 import 'package:timetable_app/whats_new.dart';
 
 import 'check_for_updates.dart';
@@ -68,6 +70,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   subtitle: "Permanently delete all schedule data",
                   onTap: () => _showDeleteConfirmation(context),
                 ),
+                // const Divider(
+                //   height: 1,
+                //   indent: 56,
+                // ),
+                // _buildListTile(
+                //     icon: Icons.notification_important_outlined,
+                //     title: "Test Notification",
+                //     onTap: () async {
+                //       await NotificationService().showTestNotification();
+                //     })
               ],
             ),
           ),
@@ -78,14 +90,6 @@ class _SettingsPageState extends State<SettingsPage> {
             color: theme.colorScheme.surfaceVariant.withOpacity(0.3),
             child: Column(
               children: [
-                _buildListTile(
-                  icon: Icons.info_outline,
-                  title: "Version",
-                  subtitle: info == null
-                      ? "Loading..."
-                      : "${info!.version} (Build ${info!.buildNumber})",
-                ),
-                const Divider(height: 1, indent: 56),
                 _buildListTile(
                   icon: Icons.update,
                   title: "Check for Updates",
@@ -105,6 +109,14 @@ class _SettingsPageState extends State<SettingsPage> {
                       showWhatsNewSheet(context);
                     }),
                 const Divider(height: 1, indent: 56),
+                _buildListTile(
+                  icon: Icons.info_outline,
+                  title: "Version",
+                  subtitle: info == null
+                      ? "Loading..."
+                      : "${info!.version} (Build ${info!.buildNumber})",
+                ),
+                // const Divider(height: 1, indent: 56),
               ],
             ),
           ),
