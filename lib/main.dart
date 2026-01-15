@@ -720,25 +720,52 @@ class _TimetableScreenState extends State<TimetableScreen> {
           ],
         ),
       ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () {
+      //     // Navigate to ManageTimetableScreen passing the currently viewed day
+      //     Navigator.push(
+      //       context,
+      //       MaterialPageRoute(
+      //         builder: (context) =>
+      //             ManageTimetableScreen(initialDay: selectedDay),
+      //       ),
+      //     ).then((_) {
+      //       // This refreshes the main screen UI when you come back from managing
+      //       setState(() {
+      //         timetable = loadTimetable();
+      //       });
+      //     });
+      //   },
+      //   tooltip: "Edit Schedule",
+      //   child: const Icon(
+      //       Icons.edit_note_rounded), // Changed to an edit-style icon
+      // ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // Navigate to ManageTimetableScreen passing the currently viewed day
           Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) =>
                   ManageTimetableScreen(initialDay: selectedDay),
             ),
-          ).then((_) {
-            // This refreshes the main screen UI when you come back from managing
+          ).then((_) async {
+            // <--- 1. Mark this callback as 'async'
+
+            // 2. Reload the latest data from Hive to update the UI
+            final updatedTimetable = loadTimetableSorted();
+
             setState(() {
-              timetable = loadTimetable();
+              timetable = updatedTimetable;
             });
+
+            // 3. Force a sync with the Notification Service
+            print("🔄 Syncing notifications with new schedule...");
+            await syncNotifications();
+            print("✅ Sync complete!");
           });
         },
         tooltip: "Edit Schedule",
-        child: const Icon(
-            Icons.edit_note_rounded), // Changed to an edit-style icon
+        child: const Icon(Icons.edit_note_rounded),
       ),
     );
   }

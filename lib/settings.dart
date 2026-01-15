@@ -70,16 +70,16 @@ class _SettingsPageState extends State<SettingsPage> {
                   subtitle: "Permanently delete all schedule data",
                   onTap: () => _showDeleteConfirmation(context),
                 ),
-                // const Divider(
-                //   height: 1,
-                //   indent: 56,
-                // ),
-                // _buildListTile(
-                //     icon: Icons.notification_important_outlined,
-                //     title: "Test Notification",
-                //     onTap: () async {
-                //       await NotificationService().showTestNotification();
-                //     })
+                const Divider(
+                  height: 1,
+                  indent: 56,
+                ),
+                _buildListTile(
+                    icon: Icons.notification_important_outlined,
+                    title: "Test Notification",
+                    onTap: () async {
+                      await NotificationService().showTestNotification();
+                    })
               ],
             ),
           ),
