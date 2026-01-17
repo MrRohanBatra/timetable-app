@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
@@ -32,7 +34,9 @@ Future<void> checkAndShowWhatsNew(BuildContext context) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
+  if (Platform.isAndroid) {
+    await FlutterDisplayMode.setHighRefreshRate();
+  }
   // Initialize Hive
   await Hive.initFlutter();
   await Hive.openBox('timetable');

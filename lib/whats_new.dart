@@ -15,10 +15,10 @@ final List<Map<String, dynamic>> newFeatures = const [
     "icon": Icons.edit_note_rounded,
   },
   {
-    "title": "Quick Delete Mode",
+    "title": "Bug Fixes",
     "description":
-        "Easily remove classes directly from the edit screen. Feature suggested by Dhruv.",
-    "icon": Icons.delete_sweep_outlined,
+        "Fixed a issue where the display refresh rate was locked at 60Hz only for Oneplus/Samsung/Nothing/Oppo devices.",
+    "icon": Icons.bug_report_outlined,
   },
 ];
 // void showWhatsNewSheet(BuildContext context) {
