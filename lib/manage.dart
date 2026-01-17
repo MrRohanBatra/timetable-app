@@ -147,6 +147,7 @@ class _ManageTimetableScreenState extends State<ManageTimetableScreen> {
                     return TextField(
                       controller: ctrl,
                       focusNode: node,
+                      onChanged: (val) => subjectController.text = val,
                       decoration:
                           const InputDecoration(labelText: "Subject Name"),
                     );

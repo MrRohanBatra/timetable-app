@@ -9,10 +9,10 @@ final List<Map<String, dynamic>> newFeatures = const [
     "icon": Icons.notifications_active_outlined,
   },
   {
-    "title": "Smart Auto Updates",
+    "title": "Custom Subjects",
     "description":
-        "The app now stays up-to-date automatically by checking for new versions in the background.",
-    "icon": Icons.update_rounded,
+    "Not in the list? No problem! You can now type and save any custom subject name you want.",
+    "icon": Icons.edit_note_rounded,
   },
   {
     "title": "Quick Delete Mode",
