@@ -1,0 +1,135 @@
+{
+  "Monday": [
+    {
+      "time": "8:00 AM - 9:00 AM",
+      "subjectName": "Operations Research",
+      "classroom": "FF9",
+      "classType": "L"
+    },
+    {
+      "time": "9:00 AM - 10:00 AM",
+      "subjectName": "Sensor Technology & Android Programming",
+      "classroom": "G2",
+      "classType": "L"
+    },
+    {
+      "time": "11:00 AM - 12:00 PM",
+      "subjectName": "Cloud Based Enterprise Systems",
+      "classroom": "CS3",
+      "classType": "L"
+    },
+    {
+      "time": "1:00 PM - 2:00 PM",
+      "subjectName": "Open Source Software Development",
+      "classroom": "G2",
+      "classType": "L"
+    },
+    {
+      "time": "2:00 PM - 4:00 PM",
+      "subjectName": "Cloud Based Enterprise Systems Lab",
+      "classroom": "CL22",
+      "classType": "L"
+    }
+  ],
+  "Tuesday": [
+    {
+      "time": "8:00 AM - 9:00 AM",
+      "subjectName": "Operations Research",
+      "classroom": "FF9",
+      "classType": "L"
+    },
+    {
+      "time": "9:00 AM - 10:00 AM",
+      "subjectName": "Sensor Technology & Android Programming",
+      "classroom": "G2",
+      "classType": "L"
+    },
+    {
+      "time": "2:00 PM - 3:00 PM",
+      "subjectName": "Cloud Based Enterprise Systems",
+      "classroom": "G2",
+      "classType": "L"
+    },
+    {
+      "time": "3:00 PM - 4:00 PM",
+      "subjectName": "Data Mining and Web Algorithms",
+      "classroom": "CS4",
+      "classType": "L"
+    }
+  ],
+  "Wednesday": [
+    {
+      "time": "10:00 AM - 11:00 AM",
+      "subjectName": "Data Mining and Web Algorithms",
+      "classroom": "TR305",
+      "classType": "T"
+    },
+    {
+      "time": "1:00 PM - 2:00 PM",
+      "subjectName": "Data Mining and Web Algorithms",
+      "classroom": "G2",
+      "classType": "L"
+    },
+    {
+      "time": "2:00 PM - 4:00 PM",
+      "subjectName": "GenAI Workshop",
+      "classroom": "CL13",
+      "classType": "P"
+    }
+  ],
+  "Thursday": [
+    {
+      "time": "9:00 AM - 10:00 AM",
+      "subjectName": "Operations Research",
+      "classroom": "FF9",
+      "classType": "L"
+    },
+    {
+      "time": "10:00 AM - 12:00 PM",
+      "subjectName": "Cloud Based Enterprise Systems Lab",
+      "classroom": "CL20",
+      "classType": "P"
+    },
+    {
+      "time": "1:00 PM - 2:00 PM",
+      "subjectName": "Data Mining and Web Algorithms",
+      "classroom": "G2",
+      "classType": "L"
+    }
+  ],
+  "Friday": [
+    {
+      "time": "9:00 AM - 10:00 AM",
+      "subjectName": "Open Source Software Development",
+      "classroom": "CR401",
+      "classType": "L"
+    },
+    {
+      "time": "10:00 AM - 11:00 AM",
+      "subjectName": "Cloud Based Enterprise Systems",
+      "classroom": "FF4",
+      "classType": "L"
+    }
+  ],
+  "Saturday": [
+    {
+      "time": "9:00 AM - 10:00 AM",
+      "subjectName": "Sensor Technology & Android Programming",
+      "classroom": "G2",
+      "classType": "L"
+    },
+    {
+      "time": "11:00 AM - 12:00 PM",
+      "subjectName": "GenAI Workshop",
+      "classroom": "LT3",
+      "classType": "L"
+    },
+    {
+      "time": "1:00 PM - 2:00 PM",
+      "subjectName": "Open Source Software Development",
+      "classroom": "G2",
+      "classType": "L"
+    }
+  ],
+  "Sunday": []
+}

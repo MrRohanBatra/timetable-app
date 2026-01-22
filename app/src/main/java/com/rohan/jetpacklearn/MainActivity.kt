@@ -1,25 +1,31 @@
 package com.rohan.jetpacklearn
-
+import com.rohan.jetpacklearn.ui.TimetableList
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateValueAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.togetherWith
 
 // 🔹 Foundation
-import androidx.compose.foundation.background
+
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 // 🔹 Material Icons (base)
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Menu
-import androidx.compose.material.icons.outlined.LocationOn
+
 import androidx.compose.material.icons.outlined.Settings
 
 // 🔹 Material Icons (Extended – Google Fonts)
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.rounded.*
 
 // 🔹 Material 3
@@ -32,11 +38,14 @@ import androidx.compose.runtime.*
 // 🔹 UI
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 // 🔹 Theme
 import com.rohan.jetpacklearn.ui.theme.JetPackLearnTheme
+import com.rohan.jetpacklearn.utils.FileUtils
+import com.rohan.jetpacklearn.utils.TimeUtils
 
 // 🔹 Coroutines
 import kotlinx.coroutines.launch
@@ -56,12 +65,15 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimetableApp() {
-
+    val context= LocalContext.current;
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-
-    val today:String=getToday()
+    val tt by produceState(initialValue = emptyMap<String, List<ClassEntry>>()) {
+        value= FileUtils.loadTimetable(context);
+    }
+    val today:String= TimeUtils.getToday();
     var selectedScreen by remember { mutableStateOf(today) }
+    val currentClasses=tt[selectedScreen]?:emptyList();
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -186,22 +198,43 @@ fun TimetableApp() {
                 )
             }
         ) { padding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
 
-                TimetableList(entries = sampleClasses) { }
+                // 🔹 ANIMATION WRAPPER
+                AnimatedContent(
+                    targetState = selectedScreen, // The trigger: when this changes, animate!
+                    transitionSpec = {
+                        // A smooth Fade + Scale effect (looks very modern)
+                        (fadeIn(animationSpec = tween(400)) + scaleIn(initialScale = 0.92f, animationSpec = tween(400)))
+                            .togetherWith(fadeOut(animationSpec = tween(200)))
+                    },
+                    label = "DayTransition"
+                ) { targetDay ->
+
+                    // 🔹 Get data for the *target* day (the one fading in)
+                    val classesForDay = tt[targetDay] ?: emptyList()
+
+                    if (classesForDay.isEmpty()) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "No classes today! 🎉",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    } else {
+                        TimetableList(
+                            entries = classesForDay,
+                            dayname = selectedScreen,
+
+                        ) { /* Edit Click */ }
+                    }
+                }
             }
         }
     }
 }
 
-fun getToday(): String{
-    return "Monday"
-}
 @Composable
 fun DrawerDayItem(
     day: String,
@@ -213,9 +246,9 @@ fun DrawerDayItem(
         icon = {
             Icon(
                 imageVector = if (isToday)
-                    Icons.Default.LocationOn
+                    Icons.Filled.Today
                 else
-                    Icons.Outlined.LocationOn,
+                    Icons.Outlined.CalendarMonth,
                 contentDescription = null,
                 tint = if (isToday)
                     MaterialTheme.colorScheme.primary
@@ -263,249 +296,31 @@ fun DrawerFooter(
         )
     )
 }
-data class ClassEntry(
-    val time: String,
-    val subjectName: String,
-    val classroom: String,
-    val classType: String, // Lecture / Lab / Tutorial
-    val isLive: Boolean
-)
-val sampleClasses = listOf(
-    ClassEntry(
-        time = "8:00 AM - 9:00 AM",
-        subjectName = "Operations Research",
-        classroom = "FF9",
-        classType = "Lecture",
-        isLive = false
-    ),
+val sampleClasses = TimeUtils.sortClassesByTime(listOf(
     ClassEntry(
         time = "9:00 AM - 10:00 AM",
         subjectName = "Sensor Technology & Android Programming",
         classroom = "G2",
         classType = "Lecture",
-        isLive = true
     ),
+    ClassEntry(
+        time = "8:00 AM - 9:00 AM",
+        subjectName = "Operations Research",
+        classroom = "FF9",
+        classType = "Lecture",
+    ),
+
     ClassEntry(
         time = "11:00 AM - 12:00 PM",
         subjectName = "Cloud Based Enterprise Systems",
         classroom = "CS3",
         classType = "Lecture",
-        isLive = false
     ),
     ClassEntry(
         time = "2:00 PM - 4:00 PM",
         subjectName = "Cloud Based Enterprise Systems Lab",
         classroom = "CL22",
         classType = "Lab",
-        isLive = false
     )
 )
-
-
-@Composable
-fun getClassIcon(type: String) = when (type) {
-    "Lecture" -> Icons.Filled.MenuBook
-    "Lab" -> Icons.Filled.Science
-    "Tutorial" -> Icons.Filled.Groups
-    else -> Icons.Filled.Event
-}
-
-// 🔹 Helper function to get color based on class type
-@Composable
-fun getClassColor(type: String): androidx.compose.ui.graphics.Color {
-    return when (type) {
-        "Lecture" -> MaterialTheme.colorScheme.primary
-        "Lab" -> MaterialTheme.colorScheme.tertiary
-        "Tutorial" -> MaterialTheme.colorScheme.secondary
-        else -> MaterialTheme.colorScheme.outline
-    }
-}
-
-@Composable
-fun TimetableList(
-    entries: List<ClassEntry>,
-    onEdit: (ClassEntry) -> Unit
-) {
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
-    ) {
-        // Optional: Add a header
-        item {
-            Text(
-                text = "Today's Schedule",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 4.dp, start = 4.dp)
-            )
-        }
-
-        items(entries) { entry ->
-            TimetableCard(
-                entry = entry,
-                onClick = { onEdit(entry) }
-            )
-        }
-
-        // Add some bottom padding for scroll comfort
-        item { Spacer(modifier = Modifier.height(30.dp)) }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TimetableCard(
-    entry: ClassEntry,
-    onClick: () -> Unit
-) {
-    val accentColor = getClassColor(entry.classType)
-
-    ElevatedCard(
-        onClick = onClick,
-        colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(IntrinsicSize.Min) // Ensures the color strip matches card height
-        ) {
-            // 🔹 1. Left Color Strip Accent
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .width(8.dp)
-                    .background(accentColor)
-            )
-
-            // 🔹 2. Main Content
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(16.dp)
-            ) {
-                // --- Top Row: Time & Live Badge ---
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Rounded.AccessTime,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = accentColor
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = entry.time,
-                            style = MaterialTheme.typography.labelLarge,
-                            color = accentColor,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-
-                    if (entry.isLive) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.errorContainer,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(6.dp)
-                                        .background(MaterialTheme.colorScheme.error, CircleShape)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = "LIVE",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onErrorContainer
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // --- Middle: Subject Name ---
-                Text(
-                    text = entry.subjectName,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // --- Bottom Row: Location & Type & Edit ---
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    // Location Pill
-                    Surface(
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.LocationOn,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = entry.classroom,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    // Class Type Text
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = getClassIcon(entry.classType),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = entry.classType,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    // Edit Icon (Subtle)
-                    Icon(
-                        imageVector = Icons.Rounded.Edit,
-                        contentDescription = "Edit",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.outline
-                    )
-                }
-            }
-        }
-    }
-}
+)
