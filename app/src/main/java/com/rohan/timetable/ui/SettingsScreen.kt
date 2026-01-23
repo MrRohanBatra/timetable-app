@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -103,15 +104,64 @@ fun SettingsScreen() {
                     onClick = { /* Handle Edit */ }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+//                SettingsItem(
+//                    icon = Icons.Rounded.SystemUpdateAlt,
+//                    title = "Import from old app",
+//                    subtitle = "Migrate timetable from previous version",
+//                    iconTint = MaterialTheme.colorScheme.primary,
+//                    onClick = {
+//                        launchMigration(context)
+//                    }
+//                )
+                var showMigrationDialog by remember { mutableStateOf(false) }
+
                 SettingsItem(
                     icon = Icons.Rounded.SystemUpdateAlt,
                     title = "Import from old app",
                     subtitle = "Migrate timetable from previous version",
                     iconTint = MaterialTheme.colorScheme.primary,
                     onClick = {
-                        launchMigration(context)
+                        showMigrationDialog = true
                     }
                 )
+
+                if (showMigrationDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showMigrationDialog = false },
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Rounded.Warning,
+                                contentDescription = null
+                            )
+                        },
+                        title = {
+                            Text("Replace existing classes?")
+                        },
+                        text = {
+                            Text(
+                                "Importing data from the old app will erase all existing classes in this app. " +
+                                        "This action cannot be undone."
+                            )
+                        },
+                        confirmButton = {
+                            TextButton(
+                                onClick = {
+                                    showMigrationDialog = false
+                                    launchMigration(context) // ❗ unchanged
+                                }
+                            ) {
+                                Text("Import")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(
+                                onClick = { showMigrationDialog = false }
+                            ) {
+                                Text("Cancel")
+                            }
+                        }
+                    )
+                }
             }
         }
 

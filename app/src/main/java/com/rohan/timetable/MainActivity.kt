@@ -4,6 +4,7 @@ import android.net.Uri
 import com.rohan.timetable.ui.TimetableList
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
@@ -52,14 +53,22 @@ import com.rohan.timetable.ui.SettingsScreen
 import com.rohan.timetable.ui.theme.timetableTheme
 //import com.rohan.timetable.utils.FileUtils
 import com.rohan.timetable.utils.TimeUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 // 🔹 Coroutines
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
+    private lateinit var timetableViewModel: TimetableViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        handleShareIntent(intent)
+        timetableViewModel = TimetableViewModel(application)
+
+        HandleShareIntent(intent)
         setContent {
             timetableTheme {
                 val viewModel: TimetableViewModel = viewModel()
@@ -70,11 +79,22 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        handleShareIntent(intent)
+        HandleShareIntent(intent)
     }
 
-    private fun handleShareIntent(intent: Intent?) {
+    private fun HandleShareIntent(intent: Intent) {
         if (intent?.action == Intent.ACTION_SEND) {
+
+
+            val textData = intent.getStringExtra(Intent.EXTRA_TEXT)
+
+            if (textData != null) {
+                Log.d("SharedJson", "Received via Text: $textData")
+                timetableViewModel.importFromJson(textData);
+            }
+        }
+        // 2. Fallback: Try to read as a File (Legacy/Standard Share)
+        else {
             val uri = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
             if (uri != null) {
                 val json = contentResolver
@@ -82,12 +102,12 @@ class MainActivity : ComponentActivity() {
                     ?.bufferedReader()
                     ?.use { it.readText() }
 
-                Log.d("SharedJson", json ?: "NULL")
+                Log.d("SharedJson", "Received via File: ${json ?: "NULL"}")
 
-                // TODO: parse & save
             }
         }
     }
+
 }
 
 

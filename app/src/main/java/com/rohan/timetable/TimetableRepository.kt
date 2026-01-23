@@ -28,7 +28,9 @@ class TimetableRepository(context: Context) {
         dao.delete(entry)
     }
 
-    // 🔹 Optional: clear everything
+    suspend fun addAllClasses(entries: List<ClassEntity>) {
+        dao.insertAll(entries)
+    }
     suspend fun clearAll() {
         dao.clearAll()
     }

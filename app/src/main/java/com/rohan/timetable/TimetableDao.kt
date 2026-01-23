@@ -12,6 +12,8 @@ interface TimetableDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entry: ClassEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(classes: List<ClassEntity>)
     @Update
     suspend fun update(entry: ClassEntity)
 
