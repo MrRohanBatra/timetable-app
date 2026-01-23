@@ -3,9 +3,22 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 final List<Map<String, dynamic>> newFeatures = const [
   {
+    "title": "Developer Message",
+    "description":
+    "🎉 We’re now on the Google Play Store! This update introduces an easy in-app migration so you can safely move your existing data to the new version.",
+    "icon": Icons.campaign_outlined,
+
+  },
+  {
+    "title": "Data Migration",
+    "description":
+    "Easily migrate your existing timetable and subjects to the new version without losing any data.",
+    "icon": Icons.sync_alt_rounded,
+  },
+  {
     "title": "Class Reminders",
     "description":
-        "Never miss a lecture again! Get smart notifications 5 minutes before your class starts.",
+    "Never miss a lecture again! Get smart notifications 5 minutes before your class starts.",
     "icon": Icons.notifications_active_outlined,
   },
   {
@@ -17,10 +30,11 @@ final List<Map<String, dynamic>> newFeatures = const [
   {
     "title": "Bug Fixes",
     "description":
-        "Fixed a issue where the display refresh rate was locked at 60Hz only for Oneplus/Samsung/Nothing/Oppo devices.",
+    "Fixed an issue where the display refresh rate was locked at 60Hz on OnePlus, Samsung, Nothing, and Oppo devices.",
     "icon": Icons.bug_report_outlined,
   },
 ];
+
 // void showWhatsNewSheet(BuildContext context) {
 //   final theme = Theme.of(context);
 //
