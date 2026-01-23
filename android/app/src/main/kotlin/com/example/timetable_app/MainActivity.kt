@@ -1,7 +1,6 @@
 package com.example.timetable_app
 
 import android.content.Intent
-import androidx.core.content.FileProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -9,14 +8,12 @@ import java.io.File
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "migration"
-    // The flag acts as a "state" waiting for Flutter to be ready
     private var isMigrationMode = false
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
         // 1. Check if we were launched for Migration
-        // We do this immediately upon engine config
         if (intent.action == "com.example.timetable_app.ACTION_MIGRATE") {
             isMigrationMode = true
         }
@@ -24,18 +21,20 @@ class MainActivity : FlutterActivity() {
         // 2. Setup the Channel
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
-                // NEW: Flutter asks if migration is needed
+                // Flutter asks: "Should I migrate?"
                 "checkForMigration" -> {
                     result.success(isMigrationMode)
                 }
 
-                // Existing: Flutter sends the file path back to native
+                // Flutter says: "Here is the path to the file I created"
                 "shareFileToNewApp" -> {
                     val path = call.argument<String>("path")
                     if (path != null) {
-                        shareFile(path)
+                        // NEW LOGIC: Read file -> Send Text
+                        readAndSendFileContent(path)
                         result.success(null)
-                        // Close the app if it was just opened for migration
+
+                        // Close old app if done
                         if (isMigrationMode) finish()
                     } else {
                         result.error("INVALID_PATH", "Path was null", null)
@@ -45,26 +44,36 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
-
-        // DELETED: The Handler().postDelayed block is removed.
-        // We no longer forcefully invoke the method from Native.
     }
 
-    private fun shareFile(path: String) {
-        val file = File(path)
-        val uri = FileProvider.getUriForFile(
-            this,
-            "$packageName.fileprovider",
-            file
-        )
+    private fun readAndSendFileContent(path: String) {
+        try {
+            val file = File(path)
 
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "application/json"
-            putExtra(Intent.EXTRA_STREAM, uri)
-            setPackage("com.rohan.timetable")
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            // 1. NATIVE READ: Read the file content into a String
+            // This works perfectly for internal files without FileProvider permissions
+            val jsonContent = file.readText()
+
+            // 2. SEND DIRECTLY: Send the content string
+            val intent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain" // or "application/json"
+
+                // Put the DATA directly (no file URI needed)
+                putExtra(Intent.EXTRA_TEXT, jsonContent)
+
+                // 3. TARGET SPECIFIC APP: Bypasses the "Share with..." UI
+                // Ensure this package and class name matches your NEW APP exactly
+                setClassName("com.rohan.timetable", "com.rohan.timetable.MainActivity")
+
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            startActivity(intent)
+            println("✅ Data sent successfully via Native Read!")
+
+        } catch (e: Exception) {
+            println("❌ Failed to read/send file: ${e.message}")
+            e.printStackTrace()
         }
-
-        startActivity(intent)
     }
 }

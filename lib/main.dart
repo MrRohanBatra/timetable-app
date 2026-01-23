@@ -14,7 +14,7 @@ import 'package:path_provider/path_provider.dart'; // Required for file saving
 import 'manage.dart';
 import 'notification_service.dart';
 import "whats_new.dart";
-
+const platform = MethodChannel('migration');
 late String day;
 Future<void> checkAndShowWhatsNew(BuildContext context) async {
   final packageInfo = await PackageInfo.fromPlatform();
@@ -46,7 +46,28 @@ void main() async {
   await NotificationService().init();
   runApp(const RestartWidget(child: const MyApp()));
 }
+Map<String, dynamic> loadTimetable() {
+  final box = Hive.box('timetable');
+  String? jsonString = box.get('schedule_data');
 
+  if (jsonString != null) {
+    return Map<String, dynamic>.from(json.decode(jsonString));
+  } else {
+    // Default empty structure if nothing is in Hive yet
+    final emptyWeek = {
+      "Monday": {},
+      "Tuesday": {},
+      "Wednesday": {},
+      "Thursday": {},
+      "Friday": {},
+      "Saturday": {},
+      "Sunday": {},
+    };
+    // Save this initial structure so we have something to edit later
+    box.put('schedule_data', json.encode(emptyWeek));
+    return emptyWeek;
+  }
+}
 String getTodayDay() {
   final now = DateTime.now();
   final format = DateFormat("EEEE");
@@ -129,26 +150,75 @@ Future<String?> selectTimeRange(BuildContext context) async {
 
 /// Loads timetable from Hive.
 /// If Hive is empty, it returns a default empty structure for the week.
-Map<String, dynamic> loadTimetable() {
-  final box = Hive.box('timetable');
-  String? jsonString = box.get('schedule_data');
 
-  if (jsonString != null) {
-    return Map<String, dynamic>.from(json.decode(jsonString));
-  } else {
-    // Default empty structure if nothing is in Hive yet
-    final emptyWeek = {
-      "Monday": {},
-      "Tuesday": {},
-      "Wednesday": {},
-      "Thursday": {},
-      "Friday": {},
-      "Saturday": {},
-      "Sunday": {},
-    };
-    // Save this initial structure so we have something to edit later
-    box.put('schedule_data', json.encode(emptyWeek));
-    return emptyWeek;
+// Future<void> _checkAndRunMigration() async {
+//   try {
+//     // 1. Ask Native: "Did we open specifically for migration?"
+//     // This awaits until the channel is established, solving the race condition.
+//     final bool shouldMigrate = await platform.invokeMethod('checkForMigration');
+//
+//     if (shouldMigrate) {
+//       print("🚀 Migration Mode Detected by Flutter!");
+//
+//       // 2. Perform the export logic directly
+//       String? filePath = await exportTimetablePath();
+//
+//       if (filePath != null) {
+//         // 3. Send the file path back to Native to share
+//         await platform.invokeMethod('shareFileToNewApp', {"path": filePath});
+//       }
+//     }
+//   } catch (e) {
+//     print("❌ Error during migration check: $e");
+//   }
+// }
+Future<void> _checkAndRunMigration(BuildContext context) async {
+  try {
+    final bool shouldMigrate =
+    await platform.invokeMethod('checkForMigration');
+
+    if (shouldMigrate) {
+      print("🚀 Migration Mode Detected by Flutter!");
+      _showMigrationDialog(context);
+
+      String? filePath = await exportTimetablePath();
+
+      if (filePath != null) {
+        await platform.invokeMethod(
+          'shareFileToNewApp',
+          {"path": filePath},
+        );
+      }
+    }
+  } catch (e) {
+    print("❌ Error during migration check: $e");
+  } finally {
+    _hideMigrationDialog(context);
+  }
+}
+void _showMigrationDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    barrierDismissible: false, // 👈 user cannot close
+    builder: (_) => AlertDialog(
+      content: Row(
+        children: const [
+          CircularProgressIndicator(),
+          SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              "Migrating your data...\nPlease wait",
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+void _hideMigrationDialog(BuildContext context) {
+  if (Navigator.canPop(context)) {
+    Navigator.pop(context);
   }
 }
 
@@ -250,13 +320,13 @@ class TimetableScreen extends StatefulWidget {
 class _TimetableScreenState extends State<TimetableScreen> {
   late Map<String, dynamic> timetable;
   String selectedDay = day;
-  static const platform = MethodChannel('migration');
+
   @override
   void initState() {
     super.initState();
     timetable = loadTimetableSorted();
     _requestNotificationPermissions();
-    _checkAndRunMigration();
+    _checkAndRunMigration(context);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWhatsNew(context);
       syncNotifications();
@@ -267,27 +337,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
 // 👇 ADD THIS FUNCTION
-  Future<void> _checkAndRunMigration() async {
-    try {
-      // 1. Ask Native: "Did we open specifically for migration?"
-      // This awaits until the channel is established, solving the race condition.
-      final bool shouldMigrate = await platform.invokeMethod('checkForMigration');
 
-      if (shouldMigrate) {
-        print("🚀 Migration Mode Detected by Flutter!");
-
-        // 2. Perform the export logic directly
-        String? filePath = await exportTimetablePath();
-
-        if (filePath != null) {
-          // 3. Send the file path back to Native to share
-          await platform.invokeMethod('shareFileToNewApp', {"path": filePath});
-        }
-      }
-    } catch (e) {
-      print("❌ Error during migration check: $e");
-    }
-  }
   Future<void> _requestNotificationPermissions() async {
     final android = NotificationService()
         .flutterLocalNotificationsPlugin
