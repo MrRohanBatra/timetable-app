@@ -256,7 +256,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     super.initState();
     timetable = loadTimetableSorted();
     _requestNotificationPermissions();
-    _setupMigrationListener();
+    _checkAndRunMigration();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWhatsNew(context);
       syncNotifications();
@@ -267,24 +267,27 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
 // 👇 ADD THIS FUNCTION
-  void _setupMigrationListener() {
-    platform.setMethodCallHandler((call) async {
-      if (call.method == "generateMigrationData") {
-        print("🚀 Migration Trigger Received from Native!");
-        try {
-          String? filePath = await exportTimetablePath();
+  Future<void> _checkAndRunMigration() async {
+    try {
+      // 1. Ask Native: "Did we open specifically for migration?"
+      // This awaits until the channel is established, solving the race condition.
+      final bool shouldMigrate = await platform.invokeMethod('checkForMigration');
 
-          if (filePath != null) {
-            await platform
-                .invokeMethod('shareFileToNewApp', {"path": filePath});
-          }
-        } catch (e) {
-          print("❌ Error during migration callback: $e");
+      if (shouldMigrate) {
+        print("🚀 Migration Mode Detected by Flutter!");
+
+        // 2. Perform the export logic directly
+        String? filePath = await exportTimetablePath();
+
+        if (filePath != null) {
+          // 3. Send the file path back to Native to share
+          await platform.invokeMethod('shareFileToNewApp', {"path": filePath});
         }
       }
-    });
+    } catch (e) {
+      print("❌ Error during migration check: $e");
+    }
   }
-
   Future<void> _requestNotificationPermissions() async {
     final android = NotificationService()
         .flutterLocalNotificationsPlugin
