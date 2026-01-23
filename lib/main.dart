@@ -9,7 +9,8 @@ import "package:hive_flutter/hive_flutter.dart";
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:timetable_app/check_for_updates.dart';
 import 'package:timetable_app/settings.dart';
-
+import 'package:flutter/services.dart'; // Required for MethodChannel
+import 'package:path_provider/path_provider.dart'; // Required for file saving
 import 'manage.dart';
 import 'notification_service.dart';
 import "whats_new.dart";
@@ -249,18 +250,38 @@ class TimetableScreen extends StatefulWidget {
 class _TimetableScreenState extends State<TimetableScreen> {
   late Map<String, dynamic> timetable;
   String selectedDay = day;
-
+  static const platform = MethodChannel('migration');
   @override
   void initState() {
     super.initState();
     timetable = loadTimetableSorted();
     _requestNotificationPermissions();
+    _setupMigrationListener();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkAndShowWhatsNew(context);
       syncNotifications();
       Future.delayed(Duration(seconds: 4), () {
         checkUpdateInBackground(context);
       });
+    });
+  }
+
+// 👇 ADD THIS FUNCTION
+  void _setupMigrationListener() {
+    platform.setMethodCallHandler((call) async {
+      if (call.method == "generateMigrationData") {
+        print("🚀 Migration Trigger Received from Native!");
+        try {
+          String? filePath = await exportTimetablePath();
+
+          if (filePath != null) {
+            await platform
+                .invokeMethod('shareFileToNewApp', {"path": filePath});
+          }
+        } catch (e) {
+          print("❌ Error during migration callback: $e");
+        }
+      }
     });
   }
 

@@ -303,3 +303,71 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 }
+
+Future<String?> exportTimetablePath() async {
+  try {
+    // 1. Get Data from Hive
+    var rawData = Hive.box("timetable").get("schedule_data");
+
+    if (rawData == null) {
+      print("❌ Export Error: No data found.");
+      throw "Export Error: No data found.";
+    }
+
+    // Handle if rawData is JSON String or Map
+    Map<String, dynamic> sourceMap;
+    if (rawData is String) {
+      sourceMap = Map<String, dynamic>.from(jsonDecode(rawData));
+    } else {
+      sourceMap = Map<String, dynamic>.from(rawData);
+    }
+
+    // 2. Transform nested Map -> List for Android
+    final Map<String, List<Map<String, dynamic>>> finalExport = {};
+
+    sourceMap.forEach((day, daySchedule) {
+      // daySchedule is {"8:00 AM": {...}, "9:00 AM": {...}}
+      // We CANNOT cast this to List. It is a Map.
+
+      Map<String, dynamic> timeSlots;
+      if (daySchedule is String) {
+        timeSlots = Map<String, dynamic>.from(jsonDecode(daySchedule));
+      } else {
+        timeSlots = Map<String, dynamic>.from(daySchedule);
+      }
+
+      List<Map<String, dynamic>> androidClasses = [];
+
+      // Iterate the MAP (Key = Time, Value = Details)
+      timeSlots.forEach((timeRange, details) {
+        // 'details' is {"subject_name": "Math", ...}
+        var mapItem = Map<String, dynamic>.from(details);
+
+        androidClasses.add({
+          // Take the KEY from the map and make it the "time" value
+          "time": timeRange,
+          "subjectName": mapItem['subject_name'] ?? "Unknown",
+          "classroom": mapItem['classroom'] ?? "N/A",
+          "classType": mapItem['class_type'] ?? "Lecture"
+        });
+      });
+
+      // Sort by time (Optional, but nice for UI)
+      // androidClasses.sort((a, b) => a['time'].compareTo(b['time']));
+
+      finalExport[day] = androidClasses;
+    });
+
+    // 3. Save & Share
+    final jsonString = jsonEncode(finalExport);
+    final dir = await getApplicationDocumentsDirectory();
+    final file = File("${dir.path}/timetable.json");
+    await file.writeAsString(jsonString);
+
+    print("✅ Export Success: ${file.path}");
+    return file.path;
+  } catch (e, stack) {
+    print("❌ Export Failed: $e");
+    print(stack);
+  }
+}
