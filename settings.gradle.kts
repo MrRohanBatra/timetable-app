@@ -10,7 +10,13 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    // 🔥 THIS IS WHAT WAS MISSING
+    plugins {
+        id("com.google.devtools.ksp") version "2.3.3"
+    }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
