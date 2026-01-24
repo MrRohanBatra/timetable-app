@@ -47,6 +47,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rohan.timetable.ui.AddClass
+
 import com.rohan.timetable.ui.SettingsScreen
 
 // 🔹 Theme
@@ -60,6 +62,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     private lateinit var timetableViewModel: TimetableViewModel
@@ -114,11 +117,12 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimetableApp(viewModel: TimetableViewModel) {
+    val context=LocalContext.current;
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope();
     val today = TimeUtils.getToday()
     var selectedScreen by remember { mutableStateOf(today) }
-
+    var showAddClasses by remember { mutableStateOf(false) }
     LaunchedEffect(selectedScreen) {
         if (selectedScreen != "Settings") {
             viewModel.setDay(selectedScreen)
@@ -224,7 +228,7 @@ fun TimetableApp(viewModel: TimetableViewModel) {
                 if(!selectedScreen.equals("Settings")){
                     FloatingActionButton(
                         onClick = {
-
+                                showAddClasses=true;
                         },
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -305,6 +309,18 @@ fun TimetableApp(viewModel: TimetableViewModel) {
                             )
                         }
                     }
+                }
+                if(showAddClasses){
+                    AddClass(
+                        selectedScreen,
+                        onDismiss = {showAddClasses=false},
+                        onConfirm = {entry->
+                            Log.e("AddClass","Entry: ${entry}");
+                            Toast.makeText(context,"Added Entry",Toast.LENGTH_SHORT).show()
+                            showAddClasses=false
+                            viewModel.addClass(entry)
+                        }
+                    )
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.rohan.timetable.ui
 
+import android.app.AlertDialog
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -11,15 +13,19 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.MenuBook
@@ -27,21 +33,39 @@ import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.rohan.timetable.ClassEntity
 import com.rohan.timetable.getClassType
 import com.rohan.timetable.utils.TimeUtils
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 
 @Composable
@@ -249,6 +273,221 @@ fun TimetableCard(
                         modifier = Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.outline
                     )
+                }
+            }
+        }
+    }
+}// === 1. INTERNAL ENUM FOR WIZARD STEPS ===
+private enum class DialogStep {
+    PickStartTime,
+    PickEndTime,
+    EnterDetails
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AddClass(
+    day: String, // e.g. "Monday"
+    onDismiss: () -> Unit,
+    onConfirm: (ClassEntity) -> Unit
+) {
+    // --- STATE ---
+    var currentStep by remember { mutableStateOf(DialogStep.PickStartTime) }
+
+    // Time State
+    val startTimeState = rememberTimePickerState(initialHour = LocalTime.now().hour, initialMinute = 0, is24Hour = false)
+    val endTimeState = rememberTimePickerState(initialHour = LocalTime.now().plusHours(1).hour, initialMinute = 0, is24Hour = false)
+
+    // Form State
+    var className by remember { mutableStateOf("") }
+    var classLocation by remember { mutableStateOf("") }
+    var selectedType by remember { mutableStateOf("L") } // Default selection
+
+    // Autocomplete State
+    val classSuggestions = listOf("Mathematics", "Physics", "Chemistry", "English", "History", "Computer Science")
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surface,
+            tonalElevation = 6.dp,
+            modifier = Modifier
+                .width(IntrinsicSize.Min)
+                .heightIn(max = 650.dp) // Limits height to avoid full screen on tablets
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // --- HEADER ---
+                Text(
+                    text = when (currentStep) {
+                        DialogStep.PickStartTime -> "Start Time"
+                        DialogStep.PickEndTime -> "End Time"
+                        DialogStep.EnterDetails -> "Class Details"
+                    },
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                // Show condensed time range only on the final step
+                if (currentStep == DialogStep.EnterDetails) {
+                    // Quick preview formatter
+                    val fmt = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
+                    val s = LocalTime.of(startTimeState.hour, startTimeState.minute).format(fmt)
+                    val e = LocalTime.of(endTimeState.hour, endTimeState.minute).format(fmt)
+                    Text(
+                        text = "$s - $e ($day)",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // --- CONTENT SWITCHER ---
+                when (currentStep) {
+                    DialogStep.PickStartTime -> {
+                        TimePicker(state = startTimeState)
+                    }
+                    DialogStep.PickEndTime -> {
+                        TimePicker(state = endTimeState)
+                    }
+                    DialogStep.EnterDetails -> {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+
+                            // 1. AUTOCOMPLETE: Class Name
+                            ExposedDropdownMenuBox(
+                                expanded = isExpanded,
+                                onExpandedChange = { isExpanded = !isExpanded }
+                            ) {
+                                OutlinedTextField(
+                                    value = className,
+                                    onValueChange = {
+                                        className = it
+                                        isExpanded = true
+                                    },
+                                    label = { Text("Subject Name") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
+                                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                    singleLine = true
+                                )
+
+                                val filteredOptions = classSuggestions.filter {
+                                    it.contains(className, ignoreCase = true)
+                                }.take(10)
+
+                                if (filteredOptions.isNotEmpty()) {
+                                    ExposedDropdownMenu(
+                                        expanded = isExpanded,
+                                        onDismissRequest = { isExpanded = false }
+                                    ) {
+                                        filteredOptions.forEach { selectionOption ->
+                                            DropdownMenuItem(
+                                                text = { Text(selectionOption) },
+                                                onClick = {
+                                                    className = selectionOption
+                                                    isExpanded = false
+                                                }
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 2. CHIPS: Class Type
+                            Column {
+                                Text("Type", style = MaterialTheme.typography.labelMedium)
+                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    listOf("L", "P", "T").forEach { type ->
+                                        FilterChip(
+                                            selected = (selectedType == type),
+                                            onClick = { selectedType = type },
+                                            label = { Text(type) },
+                                            leadingIcon = if (selectedType == type) {
+                                                { Icon(Icons.Filled.Check, null) }
+                                            } else null
+                                        )
+                                    }
+                                }
+                            }
+
+                            // 3. TEXT: Room
+                            OutlinedTextField(
+                                value = classLocation,
+                                onValueChange = { classLocation = it },
+                                label = { Text("Room / Location") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // --- NAVIGATION BUTTONS ---
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    // Back Button
+                    if (currentStep != DialogStep.PickStartTime) {
+                        TextButton(onClick = {
+                            currentStep = when (currentStep) {
+                                DialogStep.EnterDetails -> DialogStep.PickEndTime
+                                DialogStep.PickEndTime -> DialogStep.PickStartTime
+                                else -> DialogStep.PickStartTime
+                            }
+                        }) {
+                            Text("Back")
+                        }
+                    } else {
+                        TextButton(onClick = onDismiss) { Text("Cancel") }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Next / Save Button
+                    Button(
+                        onClick = {
+                            when (currentStep) {
+                                DialogStep.PickStartTime -> {
+                                    currentStep = DialogStep.PickEndTime
+                                }
+                                DialogStep.PickEndTime -> {
+                                    currentStep = DialogStep.EnterDetails
+                                }
+                                DialogStep.EnterDetails -> {
+                                    // --- FINAL PROCESSING ---
+                                    val start = LocalTime.of(startTimeState.hour, startTimeState.minute)
+                                    val end = LocalTime.of(endTimeState.hour, endTimeState.minute)
+
+                                    // Strict English Formatting (AM/PM uppercase)
+                                    val formatter = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
+                                    val timeString = "${start.format(formatter).uppercase()} - ${end.format(formatter).uppercase()}"
+
+                                    // Construct the Entity
+                                    val resultEntity = ClassEntity(
+                                        day = day,
+                                        time = timeString,
+                                        subjectName = className,
+                                        classroom = classLocation,
+                                        classType = selectedType
+                                    )
+
+                                    Log.e("AddClass", "About to call onConfirm")
+                                    // Return the Entity
+                                    onConfirm(resultEntity)
+                                }
+                            }
+                        }
+                    ) {
+                        Text(if (currentStep == DialogStep.EnterDetails) "Save" else "Next")
+                    }
                 }
             }
         }
