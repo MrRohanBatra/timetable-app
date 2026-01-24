@@ -8,12 +8,10 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.animateValueAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
 
@@ -55,14 +53,9 @@ import com.rohan.timetable.ui.SettingsScreen
 import com.rohan.timetable.ui.theme.timetableTheme
 //import com.rohan.timetable.utils.FileUtils
 import com.rohan.timetable.utils.TimeUtils
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 
 // 🔹 Coroutines
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.json.JSONObject
-import java.time.format.DateTimeFormatter
 
 class MainActivity : ComponentActivity() {
     private lateinit var timetableViewModel: TimetableViewModel
@@ -305,7 +298,7 @@ fun TimetableApp(viewModel: TimetableViewModel) {
                             TimetableList(
                                 entries = currentData, // Use the optimized variable
                                 dayname = targetState, // ⚡ FIX: Use targetState, NOT selectedScreen (prevents text flicker)
-                                onEdit = { /* Edit Click */ }
+                                viewModel=viewModel
                             )
                         }
                     }

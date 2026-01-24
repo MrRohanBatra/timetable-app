@@ -71,7 +71,10 @@ fun SettingsScreen() {
                     trailingContent = {
                         Switch(
                             checked = isDarkMode,
-                            onCheckedChange = { isDarkMode = it }
+                            onCheckedChange = {
+                                isDarkMode = it
+                            ShowToast(context)
+                            }
                         )
                     }
                 )
@@ -84,7 +87,10 @@ fun SettingsScreen() {
                     trailingContent = {
                         Switch(
                             checked = notificationsEnabled,
-                            onCheckedChange = { notificationsEnabled = it }
+                            onCheckedChange = {
+                                notificationsEnabled = it
+                                ShowToast(context)
+                            }
                         )
                     }
                 )
@@ -113,7 +119,7 @@ fun SettingsScreen() {
                     title = "Edit Schedule",
                     subtitle = "Modify subjects and times",
                     iconTint = MaterialTheme.colorScheme.error, // Or custom color
-                    onClick = { /* Handle Edit */ }
+                    onClick = { ShowToast(context)}
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
 //                SettingsItem(
@@ -334,4 +340,8 @@ fun SettingsItem(
             )
         }
     }
+}
+
+fun ShowToast(context: Context,message:String="Upcoming Feature"){
+    Toast.makeText(context,message, Toast.LENGTH_SHORT).show();
 }

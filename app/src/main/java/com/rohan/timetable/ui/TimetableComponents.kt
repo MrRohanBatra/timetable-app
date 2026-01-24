@@ -1,6 +1,6 @@
 package com.rohan.timetable.ui
 
-import android.app.AlertDialog
+import android.text.Layout
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,7 +34,10 @@ import androidx.compose.material.icons.filled.Science
 import androidx.compose.material.icons.rounded.AccessTime
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.LocationOn
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonColors
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
@@ -42,13 +46,16 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,10 +64,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.room.Delete
 import com.rohan.timetable.ClassEntity
+import com.rohan.timetable.TimetableViewModel
 import com.rohan.timetable.getClassType
 import com.rohan.timetable.utils.TimeUtils
 import java.time.LocalTime
@@ -78,7 +88,7 @@ fun getClassIcon(type: String) = when (type) {
 
 // 🔹 Helper function to get color based on class type
 @Composable
-fun getClassColor(type: String): androidx.compose.ui.graphics.Color {
+fun getClassColor(type: String): Color {
     return when (type) {
         "L" -> MaterialTheme.colorScheme.primary
         "P" -> MaterialTheme.colorScheme.tertiary
@@ -87,12 +97,16 @@ fun getClassColor(type: String): androidx.compose.ui.graphics.Color {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimetableList(
     entries: List<ClassEntity>,
     dayname: String,
-    onEdit: (ClassEntity) -> Unit
+    viewModel: TimetableViewModel
 ) {
+    var showEditDialog by remember { mutableStateOf(false) }
+    var selectedClass by remember { mutableStateOf<ClassEntity?>(null) }
+    val sheetstate = rememberModalBottomSheetState(false);
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -103,7 +117,9 @@ fun TimetableList(
                 text = "${dayname}'s Schedule",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 4.dp, start = 4.dp).wrapContentSize(Alignment.TopStart)
+                modifier = Modifier
+                    .padding(bottom = 4.dp, start = 4.dp)
+                    .wrapContentSize(Alignment.TopStart)
             )
         }
 
@@ -111,12 +127,35 @@ fun TimetableList(
             TimetableCard(
                 entry = entry,
                 dayname=dayname,
-                onClick = { onEdit(entry) }
+                onClick = { },
+                onEditClick = {
+                    selectedClass=entry;
+                    showEditDialog=true;
+                }
             )
         }
 
         // Add some bottom padding for scroll comfort
         item { Spacer(modifier = Modifier.height(30.dp)) }
+    }
+    if (showEditDialog && selectedClass != null) {
+        EditClassDialog(
+            classEntity = selectedClass!!,
+            onDismiss = {
+                showEditDialog = false
+                selectedClass = null
+            },
+            onDelete = {
+                viewModel.deleteClass(it);
+                showEditDialog=false;
+                selectedClass=null;
+            },
+            onSave = {
+                viewModel.updateClass(it);
+                showEditDialog = false
+                selectedClass = null
+            }
+        )
     }
 }
 
@@ -125,7 +164,8 @@ fun TimetableList(
 fun TimetableCard(
     entry: ClassEntity,
     dayname:String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEditClick:()-> Unit
 ) {
     val accentColor = getClassColor(entry.classType)
 
@@ -267,17 +307,133 @@ fun TimetableCard(
                     Spacer(modifier = Modifier.weight(1f))
 
                     // Edit Icon (Subtle)
-                    Icon(
-                        imageVector = Icons.Rounded.Edit,
-                        contentDescription = "Edit",
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.outline
-                    )
+                    IconButton(onClick={onEditClick()}) {
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = "Edit",
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.outline,
+
+                            )
+                    }
                 }
             }
         }
     }
-}// === 1. INTERNAL ENUM FOR WIZARD STEPS ===
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun EditClassDialog(
+    classEntity: ClassEntity,
+    onDismiss: () -> Unit,
+    onSave: (ClassEntity) -> Unit,
+    onDelete: (ClassEntity)->Unit
+) {
+    var subject by remember(classEntity.id) {
+        mutableStateOf(classEntity.subjectName)
+    }
+    var classroom by remember(classEntity.id) {
+        mutableStateOf(classEntity.classroom)
+    }
+    var classType by remember(classEntity.id) {
+        mutableStateOf(classEntity.classType)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Edit Class",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        },
+
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+            ) {
+
+                // 🔒 Time (read-only)
+                OutlinedTextField(
+                    value = classEntity.time,
+                    onValueChange = {},
+                    enabled = false,
+                    label = { Text("Time") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = subject,
+                    onValueChange = { subject = it },
+                    label = { Text("Subject") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                OutlinedTextField(
+                    value = classroom,
+                    onValueChange = { classroom = it },
+                    label = { Text("Classroom") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(12.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf("L", "T", "P").forEach { type ->
+                        FilterChip(
+                            selected = classType == type,
+                            onClick = { classType = type },
+                            label = { Text(type) }
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(
+                    onClick = { onDelete(classEntity) },
+                    colors = ButtonDefaults.buttonColors(
+                        contentColor = MaterialTheme.colorScheme.error,
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    )
+                ) {
+                    Text("Delete");
+                }
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
+                Button(
+                    onClick = {
+                        onSave(
+                            classEntity.copy(
+                                subjectName = subject,
+                                classroom = classroom,
+                                classType = classType
+                            )
+                        )
+                    }
+                ) {
+                    Text("Save")
+                }
+            }
+        },
+
+    )
+}
+// === 1. INTERNAL ENUM FOR WIZARD STEPS ===
 private enum class DialogStep {
     PickStartTime,
     PickEndTime,
@@ -372,7 +528,9 @@ fun AddClass(
                                     },
                                     label = { Text("Subject Name") },
                                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
-                                    modifier = Modifier.menuAnchor().fillMaxWidth(),
+                                    modifier = Modifier
+                                        .menuAnchor()
+                                        .fillMaxWidth(),
                                     singleLine = true
                                 )
 
