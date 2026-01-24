@@ -34,4 +34,7 @@ class TimetableRepository(context: Context) {
     suspend fun clearAll() {
         dao.clearAll()
     }
+    suspend fun getAllClasses(): List<ClassEntity> {
+        return dao.getAllClasses()
+    }
 }

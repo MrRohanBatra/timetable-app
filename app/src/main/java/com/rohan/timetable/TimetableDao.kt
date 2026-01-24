@@ -22,4 +22,7 @@ interface TimetableDao {
 
     @Query("DELETE FROM timetable")
     suspend fun clearAll()
+    @Query("Select * from timetable")
+    suspend fun getAllClasses():List<ClassEntity>
+
 }

@@ -1,3 +1,5 @@
 <resources>
-    <string name="app_name">Timeable</string>
+    <string name="app_name">Timetable</string>
+    <string name="version">1.0.0</string>
+    <string name="build_type">Beta</string>
 </resources>

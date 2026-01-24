@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun HandleShareIntent(intent: Intent) {
-        if (intent?.action == Intent.ACTION_SEND) {
+        if (intent.action == Intent.ACTION_SEND) {
 
 
             val textData = intent.getStringExtra(Intent.EXTRA_TEXT)

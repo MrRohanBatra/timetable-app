@@ -4,7 +4,9 @@ import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.rohan.timetable.utils.TimeUtils
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -19,17 +21,29 @@ class TimetableViewModel(application: Application) :
     val selectedDay: StateFlow<String> = _selectedDay.asStateFlow()
 
     // Classes for the selected day
+    @OptIn(ExperimentalCoroutinesApi::class)
     val classesForDay: StateFlow<List<ClassEntity>> =
         _selectedDay
             .flatMapLatest { day ->
                 repository.getClassesForDay(day)
+            }
+            .map{
+                classes ->
+                TimeUtils.sortClassesByTime(classes)
             }
             .stateIn(
                 scope = viewModelScope,
                 started = SharingStarted.WhileSubscribed(5_000),
                 initialValue = emptyList()
             )
-
+    fun exportTimetable(onResult: (Map<String, List<ClassEntity>>)-> Unit){
+        viewModelScope.launch(Dispatchers.IO) {
+            val classes=repository.getAllClasses();
+            val grouped=classes.groupBy {it.day }.mapValues { (_,dayClasses)-> TimeUtils.sortClassesByTime(dayClasses) }
+            Log.d("Export",grouped.toString());
+            onResult(grouped);
+        }
+    }
     // 🔹 Called when user selects a day from drawer
     fun setDay(day: String) {
         _selectedDay.value = day
@@ -102,4 +116,5 @@ class TimetableViewModel(application: Application) :
             }
         }
     }
+
 }

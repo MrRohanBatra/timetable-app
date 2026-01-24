@@ -46,9 +46,9 @@ import com.rohan.timetable.utils.TimeUtils
 
 @Composable
 fun getClassIcon(type: String) = when (type) {
-    "Lecture" -> Icons.Filled.MenuBook
-    "Lab" -> Icons.Filled.Science
-    "Tutorial" -> Icons.Filled.Groups
+    "L" -> Icons.Filled.MenuBook
+    "P" -> Icons.Filled.Science
+    "T" -> Icons.Filled.Groups
     else -> Icons.Filled.Event
 }
 
@@ -56,9 +56,9 @@ fun getClassIcon(type: String) = when (type) {
 @Composable
 fun getClassColor(type: String): androidx.compose.ui.graphics.Color {
     return when (type) {
-        "Lecture" -> MaterialTheme.colorScheme.primary
-        "Lab" -> MaterialTheme.colorScheme.tertiary
-        "Tutorial" -> MaterialTheme.colorScheme.secondary
+        "L" -> MaterialTheme.colorScheme.primary
+        "P" -> MaterialTheme.colorScheme.tertiary
+        "T" -> MaterialTheme.colorScheme.secondary
         else -> MaterialTheme.colorScheme.outline
     }
 }

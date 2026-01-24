@@ -1,5 +1,6 @@
 package com.rohan.timetable.utils
 
+import com.rohan.timetable.ClassEntity
 import com.rohan.timetable.ClassEntry
 import java.time.LocalDate
 import java.time.LocalTime
@@ -30,7 +31,7 @@ object TimeUtils {
         }
     }
 
-    fun sortClassesByTime(classes: List<ClassEntry>): List<ClassEntry> {
+    fun sortClassesByTime(classes: List<ClassEntity>): List<ClassEntity> {
         val formatter = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
 
         return classes.sortedBy { entry ->

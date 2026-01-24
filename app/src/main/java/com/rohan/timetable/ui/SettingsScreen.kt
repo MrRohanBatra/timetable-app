@@ -1,5 +1,6 @@
 package com.rohan.timetable.ui
 
+import com.rohan.timetable.R
 import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Context
@@ -20,8 +21,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.rohan.timetable.TimetableRepository
+import com.rohan.timetable.TimetableViewModel
+import com.rohan.timetable.utils.ShareUtils
+
 fun launchMigration(context: Context) {
     try {
         val intent = Intent().apply {
@@ -45,12 +51,12 @@ fun SettingsScreen() {
     val context = LocalContext.current
     var isDarkMode by remember { mutableStateOf(false) }
     var notificationsEnabled by remember { mutableStateOf(true) }
-
+    val timetableViewModel: TimetableViewModel=androidx.lifecycle.viewmodel.compose.viewModel()
+    var sharepath by remember { mutableStateOf("") }
     LazyColumn(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 🔹 1. Header / Profile Section
         item {
             SettingsHeader()
         }
@@ -89,11 +95,17 @@ fun SettingsScreen() {
         item {
             SettingsGroup(title = "Data & Sync") {
                 SettingsItem(
-                    icon = Icons.Rounded.CloudSync,
-                    title = "Sync Timetable",
-                    subtitle = "Last synced: Today, 9:00 AM",
+                    icon = Icons.Rounded.Share,
+                    title = "Share Timetable",
+                    subtitle = "Share with others",
                     iconTint = MaterialTheme.colorScheme.secondary,
-                    onClick = { /* Handle Sync */ }
+                    onClick = {
+                        timetableViewModel.exportTimetable{grouped->
+                            val path=ShareUtils.saveToFile(context,grouped)
+                            sharepath=path;
+                            ShareUtils.ShareFile(context,path);
+                        }
+                    }
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 SettingsItem(
@@ -171,7 +183,7 @@ fun SettingsScreen() {
                 SettingsItem(
                     icon = Icons.Rounded.Info,
                     title = "Version",
-                    subtitle = "v1.0.0 (Beta)",
+                    subtitle = "v${stringResource(R.string.version)} (${stringResource(R.string.build_type)})",
                     iconTint = MaterialTheme.colorScheme.outline,
                     showChevron = false
                 )
@@ -183,6 +195,19 @@ fun SettingsScreen() {
                     iconTint = MaterialTheme.colorScheme.error,
                     onClick = { /* Open Github/Form */ }
                 )
+            }
+        }
+        if(context.getString(R.string.build_type)!="Release"){
+//            item { Spacer(modifier = Modifier.height(30.dp)) }
+            item{
+                SettingsGroup(title = "Debug") {
+                    SettingsItem(
+                        icon =Icons.Rounded.Info,
+                        title = "FilePath",
+                        subtitle = sharepath,
+                        iconTint = MaterialTheme.colorScheme.outline
+                    )
+                }
             }
         }
 
